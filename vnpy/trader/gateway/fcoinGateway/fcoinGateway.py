@@ -42,8 +42,6 @@ priceTypeMap[PRICETYPE_MARKETPRICE] = 'market'
 ########################################################################
 class FcoinGateway(VtGateway):
     """FCOIN接口"""
-
-    #----------------------------------------------------------------------
     def __init__(self, eventEngine, gatewayName=''):
         """Constructor"""
         super(FcoinGateway, self).__init__(eventEngine, gatewayName)
@@ -476,26 +474,28 @@ class WebsocketApi(FcoinWebsocketApi):
         for symbol in self.symbols:
             l.append('ticker.' + symbol)
             l.append('depth.L20.' + symbol)
-            
-            tick = VtTickData()
-            tick.gatewayName = self.gatewayName
-            tick.symbol = symbol
-            tick.exchange = EXCHANGE_FCOIN
-            tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
-            self.tickDict[symbol] = tick
+            if 1:  # debug only
+                tick = VtTickData()
+                tick.gatewayName = self.gatewayName
+                tick.symbol = symbol
+                tick.exchange = EXCHANGE_FCOIN
+                tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
+                self.tickDict[symbol] = tick
             
         req = {
             'cmd': 'sub',
             'args': l,
-            'id': 1
+            'id': '1'
         }
+        print('subscribe req is', req)
         self.sendReq(req)
+
     
     #----------------------------------------------------------------------
     def onData(self, data):
         """数据回调"""
         type_ = data['type']
-        if 'hello' in type_:
+        if 'hello' in type_:  # 连接成功,开始订阅
             self.subscribe()
         elif 'ticker' in type_:
             self.onTick(data)
