@@ -2,22 +2,19 @@
 
 from __future__ import division
 
-import os
 import shelve
 import logging
+import json
 from collections import OrderedDict
-from datetime import datetime
 from copy import copy
 
 from pymongo import MongoClient, ASCENDING
 from pymongo.errors import ConnectionFailure
 
-from vnpy.event import Event
 from vnpy.trader.vtGlobal import globalSetting
-from vnpy.trader.vtEvent import *
 from vnpy.trader.vtGateway import *
 from vnpy.trader.language import text
-from vnpy.trader.vtFunction import getTempPath
+from vnpy.trader.vtFunction import getTempPath，getJsonPath
 
 
 
@@ -399,9 +396,9 @@ class MainEngine(object):
 ########################################################################
 class DataEngine(object):
     """数据引擎"""
-    contractFileName = 'ContractData.vt'
-    contractFilePath = getTempPath(contractFileName)
-    
+    #contractFileName = 'ContractData.vt'
+    #contractFilePath = getTempPath(contractFileName)
+
     FINISHED_STATUS = [STATUS_ALLTRADED, STATUS_REJECTED, STATUS_CANCELLED]
 
     #----------------------------------------------------------------------
@@ -419,14 +416,19 @@ class DataEngine(object):
         self.positionDict = {}
         self.logList = []
         self.errorList = []
+
+        self.symbols = []  # 交易对
         
         # 持仓细节相关
         self.detailDict = {}                                # vtSymbol:PositionDetail
         self.tdPenaltyList = globalSetting['tdPenalty']     # 平今手续费惩罚的产品代码列表
         
         # 读取保存在硬盘的合约数据
-        self.loadContracts()
-        
+        ##self.loadContracts()
+
+        # 读取保存在硬盘的交易对数据
+        self.load_symbols()
+
         # 注册事件监听
         self.registerEvent()
     
@@ -541,7 +543,7 @@ class DataEngine(object):
         f['data'] = self.contractDict
         f.close()
     
-    #----------------------------------------------------------------------
+    # 已经不用
     def loadContracts(self):
         """从硬盘读取合约对象"""
         f = shelve.open(self.contractFilePath)
@@ -550,7 +552,19 @@ class DataEngine(object):
             for key, value in d.items():
                 self.contractDict[key] = value
         f.close()
-        
+
+    def load_symbols(self):
+        """从硬盘读取交易对对象"""
+        symbols_filename = 'symbols.json'
+        symbols_filepath = getJsonPath(symbols_filename, __file__)
+        f = json.open(self.symbols_filepath)
+        if 'data' in f:
+            d = f['data']
+            for exchange, symbols in d.items():
+                self.symbols[exchange] = exchange
+                self.symbols[symbols] = symbols
+        f.close()
+
     #----------------------------------------------------------------------
     def getOrder(self, vtOrderID):
         """查询委托"""
