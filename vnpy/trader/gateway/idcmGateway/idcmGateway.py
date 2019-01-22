@@ -13,7 +13,6 @@ import base64
 import zlib
 from datetime import datetime, timedelta
 from copy import copy
-from urllib import urlencode
 
 
 from vnpy.api.rest import RestClient, Request
@@ -23,6 +22,7 @@ from vnpy.trader.vtFunction import getJsonPath, getTempPath
 
 REST_HOST = 'https://api.IDCM.cc:8323'
 WEBSOCKET_HOST = 'wss://real.idcm.cc:10330/websocket'
+EXCHANGE_IDCM = "IDCM"
 
 # 委托状态类型映射
 statusMapReverse = {}
@@ -159,6 +159,15 @@ class IdcmGateway(VtGateway):
         self.restApi.queryAccount()
         self.restApi.queryPosition()
 
+    def writeLog(self, msg):
+        """"""
+        log = VtLogData()
+        log.logContent = msg
+        log.gatewayName = self.gatewayName
+
+        event = Event(EVENT_LOG)
+        event.dict_['data'] = log
+        self.eventEngine.put(event)
 
 ########################################################################
 class IdcmRestApi(RestClient):
@@ -174,13 +183,13 @@ class IdcmRestApi(RestClient):
 
         self.apiKey = ''
         self.secretKey = ''
-        self.leverage = 0
 
         self.orderID = 1000000
         self.loginTime = 0
 
-        self.contractDict = {}
+        self.accountDict = {}
         self.cancelDict = {}
+        self.tickDict = {}
         self.localRemoteDict = gateway.localRemoteDict
         self.orderDict = gateway.orderDict
 
@@ -190,12 +199,6 @@ class IdcmRestApi(RestClient):
         # 生成签名
         if request.data:
             request.data = json.dumps(request.data)
-        """
-        if request.params:
-            path = request.path + '?' + urlencode(request.params)
-        else:
-            path = request.path
-        """
 
         input = request.data
         signature = generateSignature(input, self.secretKey)
@@ -219,32 +222,26 @@ class IdcmRestApi(RestClient):
 
         self.init(REST_HOST)
         self.start(sessionCount)
-        #self.queryTicker()
+        self.queryTicker()
         self.queryAccount()
-
-    # ----------------------------------------------------------------------
-    def writeLog(self, content):
-        """发出日志"""
-        log = VtLogData()
-        log.gatewayName = self.gatewayName
-        log.logContent = content
-        self.gateway.onLog(log)
 
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
         """"""
-        self.orderID += 1
-        orderID = str(self.loginTime + self.orderID)
-        vtOrderID = '.'.join([self.gatewayName, orderID])
+        #self.orderID += 1
+        #orderID = str(self.loginTime + self.orderID)
+        #vtOrderID = '.'.join([self.gatewayName, orderID])
 
         type_ = typeMap[(orderReq.direction, orderReq.offset)]
         data = {
-            'client_oid': orderID,
-            'instrument_id': orderReq.symbol,
-            'type': type_,
+            #'client_oid': orderID,
+            'Symbol': orderReq.symbol,  # 交易对
+            'size': orderReq.volume,  # 交易数量
             'price': orderReq.price,
-            'size': orderReq.volume,
-            'leverage': self.leverage,
+            'Side': 0,  # 交易方向(0 买入 1 卖出)
+            'type': type_,  # 订单类型 (0 市场价 1 限价)
+            "Amount": float(orderReq.volume * orderReq.price) # 订单总金额 - 市价必填
+            #'leverage': self.leverage,
         }
 
         order = VtOrderData()
@@ -252,20 +249,21 @@ class IdcmRestApi(RestClient):
         order.symbol = orderReq.symbol
         order.exchange = 'IDCM'
         order.vtSymbol = '.'.join([order.symbol, order.exchange])
-        order.orderID = orderID
-        order.vtOrderID = vtOrderID
+        #order.orderID = orderID
+        #order.vtOrderID = vtOrderID
         order.direction = orderReq.direction
         order.offset = orderReq.offset
         order.price = orderReq.price
         order.totalVolume = orderReq.volume
 
-        self.addRequest('POST', '/api/v1/order',
+        self.addRequest('POST', '/api/v1/trade',
                         callback=self.onSendOrder,
                         data=data,
                         extra=order,
                         onFailed=self.onSendOrderFailed,
                         onError=self.onSendOrderError)
-        return vtOrderID
+        #return vtOrderID
+        return
 
     # ----------------------------------------------------------------------
     def cancelOrder(self, cancelOrderReq):
@@ -286,7 +284,7 @@ class IdcmRestApi(RestClient):
                         callback=self.onCancelOrder,
                         data=req)
 
-    # ----------------------------------------------------------------------
+    # 获取IDCM最新币币行情数据
     def queryTicker(self):
         """"""
         self.addRequest('POST', path = '/api/v1/getticker', data={"Symbol": "BTC/USDT"},
@@ -295,7 +293,7 @@ class IdcmRestApi(RestClient):
     # ----------------------------------------------------------------------
     def queryAccount(self):
         """"""
-        self.addRequest('POST', '/api/v1/getuserinfo', data=1,
+        self.addRequest('POST', '/api/v1/getuserinfo', data="1",
                         callback=self.onQueryAccount)
 
     # ----------------------------------------------------------------------
@@ -308,95 +306,63 @@ class IdcmRestApi(RestClient):
 
     def queryOrder(self):
         """"""
-        for symbol in self.contractDict.keys():
-            # 未成交
+        for symbol in self.symbols:
             req = {
-                'instrument_id': symbol,
-                'status': 0
+                'Symbol': symbol,
+                "OrderID": 100
             }
-            path = '/api/futures/v3/orders/%s' % symbol
-            self.addRequest('GET', path, params=req,
+            path = '/api/v1/getorderinfo'
+            self.addRequest('POST', path, data=req,
                             callback=self.onQueryOrder)
 
-            # 部分成交
-            req2 = {
-                'instrument_id': symbol,
-                'status': 1
-            }
-            self.addRequest('GET', path, params=req2,
-                            callback=self.onQueryOrder)
-
-    # ----------------------------------------------------------------------
+    # 获取IDCM最新币币行情数据
     def onqueryTicker(self, data, request):
-        """"""
-        for d in data:
-            contract = VtContractData()
-            contract.gatewayName = self.gatewayName
-
-            contract.symbol = d['instrument_id']
-            contract.exchange = 'IDCM'
-            contract.vtSymbol = '.'.join([contract.symbol, contract.exchange])
-
-            contract.name = contract.symbol
-            contract.productClass = PRODUCT_FUTURES
-            contract.priceTick = float(d['tick_size'])
-            contract.size = int(d['trade_increment'])
-
-            self.contractDict[contract.symbol] = contract
-            self.gateway.onContract(contract)
-
-        self.writeLog(u'合约信息查询成功')
-
-        self.queryOrder()
-        self.queryAccount()
-        self.queryPosition()
-
-
-    def onQueryContract(self, data, request):  # type: (dict, Request)->None
-        """"""
-        status = data.get('status', None)
-        if status == 'error':
-            msg = u'错误代码：%s, 错误信息：%s' % (data['err-code'], data['err-msg'])
+        if data['result'] == 1:
+            symbol = json.loads(request.data)['Symbol']
+            tick = VtTickData()
+            self.tickDict[symbol] = tick
+            tick.gatewayName = self.gatewayName
+            tick.symbol = symbol
+            tick.exchange = "IDCM"
+            #tick.openPrice = data.data[]
+            tick.highPrice = data['data']['high']
+            tick.lowPrice = data['data']['low']
+            tick.lastPrice = data['data']['last']
+            tick.volume = data['data']['vol']
+        else:
+            msg = u'错误代码：%s, 错误信息：%s' % (data['code'], data['err-msg'])
             self.gateway.writeLog(msg)
-            return
-
-        self.gateway.writeLog(u'合约信息查询成功')
-
-        for d in data['data']:
-            contract = VtContractData()
-            contract.gatewayName = self.gatewayName
-
-            contract.symbol = d['base-currency'] + d['quote-currency']
-            contract.exchange = EXCHANGE_IDCM
-            contract.vtSymbol = '.'.join([contract.symbol, contract.exchange])
-
-            contract.name = '/'.join([d['base-currency'].upper(), d['quote-currency'].upper()])
-            contract.priceTick = 1 / pow(10, d['price-precision'])
-            contract.size = 1 / pow(10, d['amount-precision'])
-            contract.productClass = PRODUCT_SPOT
-
-            self.gateway.onContract(contract)
-
-        self.queryAccount()
 
     def onQueryAccount(self, data, request):
         """"""
-        for currency, d in data['info'].items():
-            account = VtAccountData()
-            account.gatewayName = self.gatewayName
+        if data['result'] == 1:
+            for d in data['data']:
+                currency = d['code']
+                account = self.accountDict.get(currency, None)
 
-            account.accountID = currency
-            account.vtAccountID = '.'.join([account.gatewayName, account.accountID])
+                if not account:
+                    account = VtAccountData()
+                    account.gatewayName = self.gatewayName
+                    account.accountID = d['code']
+                    account.vtAccountID = '.'.join([account.gatewayName, account.accountID])
 
-            account.balance = float(d['equity'])
-            account.available = float(d['total_avail_balance'])
-            # account.margin = float(d['margin'])
-            # account.positionProfit = float(d['unrealized_pnl'])
-            # account.closeProfit = float(d['realized_pnl'])
+                    self.accountDict[currency] = account
 
-            self.gateway.onAccount(account)
+                account.available = float(d['free'])
+                account.margin = float(d['freezed'])
 
-    # ----------------------------------------------------------------------
+                account.balance = account.margin + account.available
+
+            for account in self.accountDict.values():
+                self.gateway.onAccount(account)
+
+            self.queryOrder()
+            self.gateway.writeLog(u'资金信息查询成功')
+        else:
+            msg = u'错误代码：%s, 错误信息：%s' % (data['code'])
+            self.gateway.writeLog(msg)
+            return
+
     def onQueryPosition(self, data, request):
         """"""
         if not data['holding']:
@@ -426,31 +392,31 @@ class IdcmRestApi(RestClient):
 
     # ----------------------------------------------------------------------
     def onQueryOrder(self, data, request):
-        """"""
-        for d in data['order_info']:
-            order = VtOrderData()
-            order.gatewayName = self.gatewayName
+        if data['result'] == 1:
+            for d in data['data']:
+                order = VtOrderData()
+                order.gatewayName = self.gatewayName
 
-            order.symbol = d['instrument_id']
-            order.exchange = 'IDCM'
-            order.vtSymbol = '.'.join([order.symbol, order.exchange])
+                order.symbol = d['symbol']
+                order.exchange = 'IDCM'
+                order.vtSymbol = '.'.join([order.symbol, order.exchange])
 
-            self.orderID += 1
-            order.orderID = str(self.loginTime + self.orderID)
-            order.vtOrderID = '.'.join([self.gatewayName, order.orderID])
-            self.localRemoteDict[order.orderID] = d['order_id']
+                self.orderID += 1
+                order.orderID = str(self.loginTime + self.orderID)
+                order.vtOrderID = '.'.join([self.gatewayName, order.orderID])
+                self.localRemoteDict[order.orderID] = d['orderid']
 
-            order.price = float(d['price'])
-            order.totalVolume = int(d['size'])
-            order.tradedVolume = int(d['filled_qty'])
-            order.status = statusMapReverse[d['status']]
-            order.direction, order.offset = typeMapReverse[d['type']]
+                order.price = float(d['price'])
+                order.totalVolume = int(d['amount'])  # 委托数量
+                order.tradedVolume = int(d['executedamount'])  # 成交数量
+                order.status = statusMapReverse[d['status']]  # 订单状态
+                order.direction, order.offset = typeMapReverse[d['type']]  # 订单类型
 
-            dt = datetime.strptime(d['timestamp'], '%Y-%m-%dT%H:%M:%S.%fZ')
-            order.orderTime = dt.strftime('%H:%M:%S')
+                dt = datetime.strptime(d['timestamp'], '%Y-%m-%dT%H:%M:%S.%fZ')
+                order.orderTime = dt.strftime('%H:%M:%S')
 
-            self.gateway.onOrder(order)
-            self.orderDict[d['order_id']] = order
+                self.gateway.onOrder(order)
+                self.orderDict[d['order_id']] = order
 
     # ----------------------------------------------------------------------
     def onSendOrderFailed(self, data, request):
@@ -557,19 +523,19 @@ class IdcmWebsocketApi(WebsocketClient):
         tick = VtTickData()
         tick.gatewayName = self.gatewayName
         tick.symbol = symbol
-        tick.exchange = EXCHANGE_IDCM
+        tick.exchange = "IDCM"
         tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
         self.tickDict[symbol] = tick
 
     def onConnected(self):
         """连接回调"""
-        self.writeLog(u'Websocket API连接成功')
+        self.gateway.writeLog(u'Websocket API连接成功')
         self.login()
 
     # ----------------------------------------------------------------------
     def onDisconnected(self):
         """连接回调"""
-        self.writeLog(u'Websocket API连接断开')
+        self.gateway.writeLog(u'Websocket API连接断开')
 
     # ----------------------------------------------------------------------
     def onPacket(self, packet):
@@ -591,16 +557,6 @@ class IdcmWebsocketApi(WebsocketClient):
         self.gateway.onError(e)
 
         sys.stderr.write(self.exceptionDetail(exceptionType, exceptionValue, tb))
-
-    # ----------------------------------------------------------------------
-    def writeLog(self, content):
-        """发出日志"""
-        log = VtLogData()
-        log.gatewayName = self.gatewayName
-        log.logContent = content
-        self.gateway.onLog(log)
-
-        # ----------------------------------------------------------------------
 
     def login(self):
         """"""
