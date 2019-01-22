@@ -38,7 +38,7 @@ YD_POSITION = u'昨持仓'
 FROZEN = u'冻结量'
 POSITION_PROFIT = u'持仓盈亏'
 
-ACCOUNT_ID = u'交易对'
+ACCOUNT_ID = u'代币'
 PRE_BALANCE = u'昨净值'
 BALANCE = u'净值'
 AVAILABLE = u'可用'
