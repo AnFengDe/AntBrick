@@ -1,0 +1,12 @@
+{
+  "data": [
+    {
+      "exchange": "IDCM",
+      "symbols": [
+        "btc/usdt",
+        "eth/usdt",
+        "eth/btc"
+      ]
+    }
+  ]
+}
