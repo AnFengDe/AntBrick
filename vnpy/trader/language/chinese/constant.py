@@ -12,6 +12,7 @@ DIRECTION_LONG = u'多'
 DIRECTION_SHORT = u'空'
 DIRECTION_UNKNOWN = u'未知'
 DIRECTION_NET = u'净'
+DIRECTION_BUY = u'买入'
 DIRECTION_SELL = u'卖出'              # IB接口
 DIRECTION_COVEREDSHORT = u'备兑空'    # 证券期权
 
