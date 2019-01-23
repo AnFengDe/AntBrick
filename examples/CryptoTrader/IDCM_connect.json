@@ -1,5 +1,6 @@
 {
 	"apiKey": "pHSaWm-Za0She7-25k_UKQ",
-	"secretKey": "UqRDyv6nwQ3fYVtcg69H1wmRawgMb8O4XiRsw1KHiCuPVQtxrHSaZFso3Zs1fjbo1YhG31Gfmspo1wWk3IltfD5hPtowyJsYq6OWzNtp1DOwg4mx38YwXI8nTZQAD9GDZqYVI0KfeVrCPy1L6QtqKV1HXq2zWTMSWaxQ5rO2nIh1gwylY5uMFgS4ogYiXbil9zFE1bFF2q2",
-	"symbols": ["btcusdt","ethusdt","ethbtc"]
+	"secretKey": "UqRDyv6nwQ3fYVtcg69H1wmRawgMb8O4XiRsw1KHiCuPVQtxrHSaZFso3Zs1fjbo1YhG31Gfmspo1wWk3IltfD5hPtowyJsYq6OWzNtp1DOwg4mx38YwXI8nTZQAD9GDZqYVI0KfeVrCPy1L6QtqKV1HXq2zWTMSWaxQ5rO2nIh1gwylY5uMFgS4ogYiXbil9zFE1bFF2q21DZrqRHARo0cFisrPtw4bqWSHRTkNqOJeeQqpPxqgArX8mZmyJQcv",
+	"sessionCount": 3,
+	"symbols": ["btc/usdt","eth/usdt","eth/btc"]
 }
