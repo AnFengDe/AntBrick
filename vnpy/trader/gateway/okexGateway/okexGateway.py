@@ -77,6 +77,7 @@ class OkexGateway(VtGateway):
         try:
             apiKey = str(setting['apiKey'])
             secretKey = str(setting['secretKey'])
+            passphrase = str(setting['passphrase'])
             trace = setting['trace']
             symbols = setting['symbols']
         except KeyError:
@@ -87,7 +88,7 @@ class OkexGateway(VtGateway):
             return            
         
         # 初始化接口
-        self.spotApi.init(apiKey, secretKey, trace, symbols)
+        self.spotApi.init(apiKey, secretKey, passphrase, trace, symbols)
 
     #----------------------------------------------------------------------
     def subscribe(self, subscribeReq):
@@ -539,11 +540,11 @@ class SpotApi(OkexSpotApi):
             self.gateway.onAccount(account)                   
     
     #----------------------------------------------------------------------
-    def init(self, apiKey, secretKey, trace, symbols):
+    def init(self, apiKey, secretKey, passphrase, trace, symbols):
         """初始化接口"""
         self.symbols = symbols
         self.initCallback()
-        self.connect(OKEX_SPOT_HOST, apiKey, secretKey, trace)
+        self.connect(OKEX_SPOT_HOST, apiKey, secretKey, passphrase, trace)
         self.writeLog(u'接口初始化成功')
 
     #----------------------------------------------------------------------
@@ -629,4 +630,3 @@ class SpotApi(OkexSpotApi):
         self.subscribeSpotDepth(symbol, 5)
         self.subSpotOrder(symbol)
         self.subSpotBalance(symbol)
-    
