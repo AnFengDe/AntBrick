@@ -12,7 +12,7 @@ from queue import Queue, Empty
 from threading import Thread
 from multiprocessing.dummy import Pool
 from time import time, sleep
-from urllib import urlencode
+from urllib.parse import urlencode
 
 from websocket import create_connection
 
