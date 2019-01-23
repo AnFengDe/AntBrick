@@ -15,7 +15,6 @@ from vnpy.trader.vtGlobal import globalSetting
 from vnpy.trader.vtGateway import *
 from vnpy.trader.language import text
 from vnpy.trader.vtFunction import getTempPath, getJsonPath
-#from vnpy.trader.vtFunction import getTempPath
 
 
 
@@ -428,7 +427,7 @@ class DataEngine(object):
         ##self.loadContracts()
 
         # 读取保存在硬盘的交易对数据
-        self.load_symbols()
+        #self.load_symbols()
 
         # 注册事件监听
         self.registerEvent()
@@ -554,19 +553,6 @@ class DataEngine(object):
                 self.contractDict[key] = value
         f.close()
 
-    def load_symbols(self):
-        """从硬盘读取交易对对象"""
-        symbols_filename = 'symbols.json'
-        symbols_filepath = getJsonPath(symbols_filename, __file__)
-        with open(symbols_filepath, "r") as f:
-            if 'data' in f:
-                d = f['data']
-                for exchange, symbols in d.items():
-                    self.symbols[exchange] = exchange
-                    self.symbols[symbols] = symbols
-        f.close()
-
-    #----------------------------------------------------------------------
     def getOrder(self, vtOrderID):
         """查询委托"""
         try:
@@ -634,6 +620,7 @@ class DataEngine(object):
     #----------------------------------------------------------------------
     def updateOrderReq(self, req, vtOrderID):
         """委托请求更新"""
+        return
         vtSymbol = req.vtSymbol
             
         detail = self.getPositionDetail(vtSymbol)
