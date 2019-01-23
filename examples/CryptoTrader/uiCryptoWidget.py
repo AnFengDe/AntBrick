@@ -2,8 +2,6 @@
 
 import json
 import csv
-import os
-import platform
 from collections import OrderedDict
 
 from six import text_type
@@ -15,7 +13,6 @@ from vnpy.trader.vtConstant import *
 from vnpy.trader.vtFunction import *
 from vnpy.trader.vtGateway import *
 from vnpy.trader.uiQt import QtGui, QtWidgets, QtCore, BASIC_FONT
-
 
 COLOR_RED = QtGui.QColor('red')
 COLOR_GREEN = QtGui.QColor('green')
@@ -834,11 +831,11 @@ class TradingWidget(QtWidgets.QFrame):
     directionList = [DIRECTION_LONG,
                      DIRECTION_SHORT]
 
-    priceTypeList = [PRICETYPE_LIMITPRICE,
+    orderTypeList = [PRICETYPE_LIMITPRICE,
                      PRICETYPE_MARKETPRICE]
     
-    offsetList = [OFFSET_OPEN,
-                  OFFSET_CLOSE]
+    #offsetList = [OFFSET_OPEN,
+    #              OFFSET_CLOSE]
     
     gatewayList = ['']
 
@@ -858,6 +855,25 @@ class TradingWidget(QtWidgets.QFrame):
 
         self.initUi()
         self.registerEvent()
+        self.fullSymbols = {}  # 所有交易所的全部交易对
+
+        #读取交易对信息
+        self.load_symbols()
+
+    def load_symbols(self):
+        """从硬盘读取交易对对象"""
+        symbols_filename = 'symbols.json'
+        symbols_filepath = getJsonPath(symbols_filename, __file__)
+        try:
+            with open(symbols_filepath, "r") as f:
+                load_dict = json.load(f)
+                f.close()
+                print(load_dict)
+                if 'data' in load_dict:
+                    data = load_dict['data']
+                    self.fullSymbols = data
+        except Exception as e:
+            print(e)
 
     #----------------------------------------------------------------------
     def initUi(self):
@@ -869,19 +885,22 @@ class TradingWidget(QtWidgets.QFrame):
         self.setLineWidth(1)           
 
         # 左边部分
-        labelPriceType = QtWidgets.QLabel(vtText.PRICE_TYPE)
+        labelGateway = QtWidgets.QLabel(vtText.GATEWAY)
+        labelOrderType = QtWidgets.QLabel(vtText.ORDER_TYPE)
         labelSymbol = QtWidgets.QLabel(u'交易对')
         labelPrice = QtWidgets.QLabel(vtText.PRICE)
         labelVolume = QtWidgets.QLabel(u'数量')
-        #labelOffset = QtWidgets.QLabel(u'开平')
+
+        # 交易所
+        self.comboGateway = QtWidgets.QComboBox()
+        self.comboGateway.addItems(self.gatewayList)
+
+        # 市价，限价
+        self.comboOrderType = QtWidgets.QComboBox()
+        self.comboOrderType.addItems(self.orderTypeList)
         
-        self.comboPriceType = QtWidgets.QComboBox()
-        self.comboPriceType.addItems(self.priceTypeList)
-        
-        self.comboOffset = QtWidgets.QComboBox()
-        self.comboOffset.addItems(self.offsetList)
-        
-        self.lineSymbol = QtWidgets.QLineEdit()
+        # 交易对
+        self.comboSymbol = QtWidgets.QComboBox()
         
         validator = QtGui.QDoubleValidator()
         validator.setBottom(0)        
@@ -893,15 +912,15 @@ class TradingWidget(QtWidgets.QFrame):
         self.lineVolume.setValidator(validator)
         
         gridLeft = QtWidgets.QGridLayout()
-        gridLeft.addWidget(labelPriceType, 0, 0)
-#        gridLeft.addWidget(labelOffset, 1, 0)
+        gridLeft.addWidget(labelGateway, 0, 0)
+        gridLeft.addWidget(labelOrderType, 1, 0)
         gridLeft.addWidget(labelSymbol, 2, 0)
         gridLeft.addWidget(labelPrice, 3, 0)
         gridLeft.addWidget(labelVolume, 4, 0)
         
-        gridLeft.addWidget(self.comboPriceType, 0, 1)
-        gridLeft.addWidget(self.comboOffset, 1, 1)
-        gridLeft.addWidget(self.lineSymbol, 2, 1)
+        gridLeft.addWidget(self.comboGateway, 0, 1)
+        gridLeft.addWidget(self.comboOrderType, 1, 1)
+        gridLeft.addWidget(self.comboSymbol, 2, 1)
         gridLeft.addWidget(self.linePrice, 3, 1)
         gridLeft.addWidget(self.lineVolume, 4, 1)
         
@@ -943,12 +962,36 @@ class TradingWidget(QtWidgets.QFrame):
         self.setLayout(hbox)
 
         # 关联更新
-        self.lineSymbol.returnPressed.connect(self.updateSymbol)
+        self.comboGateway.currentIndexChanged.connect(self.updateSymbol)
+        #self.lineSymbol.returnPressed.connect(self.updateSymbol)
         self.depthMonitor.itemDoubleClicked.connect(self.updatePrice)
 
-    #----------------------------------------------------------------------
     def updateSymbol(self):
-        """合约变化"""
+        """根据交易所读取交易对"""
+        self.curGateway = str(self.comboGateway.currentText())
+        #print(self.curGateway)
+        #print(self.fullSymbols)
+
+        self.comboSymbol.clear()
+        for items in self.fullSymbols:
+            if items['gateway'] == self.curGateway:
+                #print('symbols is ', symbols)
+                self.comboSymbol.addItems(items['symbols'])
+        #contract = self.mainEngine.getContract(self.vtSymbol)
+
+        # 清空价格数量
+        self.linePrice.clear()
+        self.lineVolume.clear()
+
+        #self.depthMonitor.updateVtSymbol(self.vtSymbol)
+
+        # 订阅合约
+        #req = VtSubscribeReq()
+        #req.symbol = contract.symbol
+        #self.mainEngine.subscribe(req, contract.gatewayName)
+
+    """
+    def updateSymbol(self):
         self.vtSymbol = str(self.lineSymbol.text())
         contract = self.mainEngine.getContract(self.vtSymbol)
         
@@ -965,6 +1008,7 @@ class TradingWidget(QtWidgets.QFrame):
         req = VtSubscribeReq()
         req.symbol = contract.symbol
         self.mainEngine.subscribe(req, contract.gatewayName)
+    """
 
     #----------------------------------------------------------------------
     def updateTick(self, event):
@@ -992,8 +1036,8 @@ class TradingWidget(QtWidgets.QFrame):
     #----------------------------------------------------------------------
     def sendOrder(self, direction):
         """发单"""
-        vtSymbol = str(self.lineSymbol.text())
-        contract = self.mainEngine.getContract(vtSymbol)
+        #vtSymbol = str(self.lineSymbol.text())
+        #contract = self.mainEngine.getContract(vtSymbol)
         #if not contract:
             #return
 
@@ -1015,24 +1059,24 @@ class TradingWidget(QtWidgets.QFrame):
         
         # 委托
         req = VtOrderReq()
-        req.symbol = contract.symbol
+        req.symbol = self.comboSymbol.currentText()
+        req.vtSymbol = req.symbol
         req.price = price
         req.volume = volume
         req.direction = direction
-        req.priceType = text_type(self.comboPriceType.currentText())
-        req.offset = text_type(self.comboOffset.currentText())
+        req.orderType = text_type(self.comboOrderType.currentText())
         
-        self.mainEngine.sendOrder(req, contract.gatewayName)
+        self.mainEngine.sendOrder(req, self.curGateway)
     
     #----------------------------------------------------------------------
     def sendBuyOrder(self):
         """"""
-        self.sendOrder(DIRECTION_LONG)
+        self.sendOrder(DIRECTION_BUY)
         
     #----------------------------------------------------------------------
     def sendSellOrder(self):
         """"""
-        self.sendOrder(DIRECTION_SHORT)
+        self.sendOrder(DIRECTION_SELL)
         
     #----------------------------------------------------------------------
     def cancelAll(self):
