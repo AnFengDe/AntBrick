@@ -1,7 +1,7 @@
 {
   "data": [
     {
-      "exchange": "IDCM",
+      "gateway": "IDCM",
       "symbols": [
         "btc/usdt",
         "eth/usdt",
