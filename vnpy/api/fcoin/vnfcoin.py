@@ -11,9 +11,7 @@ import base64
 from queue import Queue, Empty
 from multiprocessing.dummy import Pool
 from time import time
-from urlparse import urlparse
-from copy import copy
-from urllib import urlencode
+from urllib.parse import urlencode
 from threading import Thread
 
 import requests
