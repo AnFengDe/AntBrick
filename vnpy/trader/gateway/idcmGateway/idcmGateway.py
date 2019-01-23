@@ -30,12 +30,15 @@ statusMapReverse['1'] = STATUS_PARTTRADED
 statusMapReverse['2'] = STATUS_ALLTRADED
 statusMapReverse['-1'] = STATUS_CANCELLED
 
-# 方向和开平映射
+# 方向和订单类型映射
 typeMap = {}
-typeMap[(DIRECTION_LONG, OFFSET_OPEN)] = '1'
-typeMap[(DIRECTION_SHORT, OFFSET_OPEN)] = '2'
-typeMap[(DIRECTION_LONG, OFFSET_CLOSE)] = '3'
-typeMap[(DIRECTION_SHORT, OFFSET_CLOSE)] = '4'
+typeMap[(DIRECTION_BUY)] = '0'
+typeMap[(DIRECTION_SELL)] = '1'
+typeMap[(PRICETYPE_MARKETPRICE)] = '0'
+typeMap[(PRICETYPE_LIMITPRICE)] = '1'
+
+#typeMap[(DIRECTION_LONG, OFFSET_CLOSE)] = '3'
+#typeMap[(DIRECTION_SHORT, OFFSET_CLOSE)] = '4'
 typeMapReverse = {v: k for k, v in typeMap.items()}
 
 
@@ -225,33 +228,33 @@ class IdcmRestApi(RestClient):
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
         """"""
-        #self.orderID += 1
-        #orderID = str(self.loginTime + self.orderID)
-        #vtOrderID = '.'.join([self.gatewayName, orderID])
+        self.orderID += 1
+        orderID = str(self.loginTime + self.orderID)
+        vtOrderID = '.'.join([self.gatewayName, orderID])
 
-        type_ = typeMap[(orderReq.direction, orderReq.offset)]
+        direction_ = typeMap[(orderReq.direction)]
+        type_ = typeMap[(orderReq.orderType)]
         data = {
             #'client_oid': orderID,
             'Symbol': orderReq.symbol,  # 交易对
             'size': orderReq.volume,  # 交易数量
             'price': orderReq.price,
-            'Side': 0,  # 交易方向(0 买入 1 卖出)
+            'Side': direction_,  # 交易方向(0 买入 1 卖出)
             'type': type_,  # 订单类型 (0 市场价 1 限价)
             "Amount": float(orderReq.volume * orderReq.price) # 订单总金额 - 市价必填
-            #'leverage': self.leverage,
         }
 
         order = VtOrderData()
         order.gatewayName = self.gatewayName
         order.symbol = orderReq.symbol
-        order.exchange = 'IDCM'
+        #order.exchange = 'IDCM'
         order.vtSymbol = '.'.join([order.symbol, order.exchange])
-        #order.orderID = orderID
-        #order.vtOrderID = vtOrderID
+        order.orderID = orderID
+        order.vtOrderID = vtOrderID
         order.direction = orderReq.direction
-        order.offset = orderReq.offset
+        order.ordertType = orderReq.orderType
         order.price = orderReq.price
-        order.totalVolume = orderReq.volume
+        order.totalVolume = orderReq.volume * orderReq.price
 
         self.addRequest('POST', '/api/v1/trade',
                         callback=self.onSendOrder,
@@ -259,12 +262,10 @@ class IdcmRestApi(RestClient):
                         extra=order,
                         onFailed=self.onSendOrderFailed,
                         onError=self.onSendOrderError)
-        #return vtOrderID
-        return
+        return vtOrderID
 
     # ----------------------------------------------------------------------
     def cancelOrder(self, cancelOrderReq):
-        """"""
         symbol = cancelOrderReq.symbol
         orderID = cancelOrderReq.orderID
         remoteID = self.localRemoteDict.get(orderID, None)
@@ -348,7 +349,7 @@ class IdcmRestApi(RestClient):
             self.queryOrder()
             self.gateway.writeLog(u'资金信息查询成功')
         else:
-            msg = u'错误代码：%s, 错误信息：%s' % (data['code'])
+            msg = u'错误代码：%s' % (data['code'])
             self.gateway.writeLog(msg)
             return
 
@@ -378,6 +379,10 @@ class IdcmRestApi(RestClient):
 
                 self.gateway.onOrder(order)
                 self.orderDict[d['order_id']] = order
+        else:
+            msg = u'错误代码：%s' % (data['code'])
+            self.gateway.writeLog(msg)
+            return
 
     # ----------------------------------------------------------------------
     def onSendOrderFailed(self, data, request):
@@ -399,13 +404,35 @@ class IdcmRestApi(RestClient):
 
     # ----------------------------------------------------------------------
     def onSendOrder(self, data, request):
-        """"""
-        self.localRemoteDict[data['client_oid']] = data['order_id']
-        self.orderDict[data['order_id']] = request.extra
+        if data['result'] == 1:
+            for d in data['data']:
+                order = VtOrderData()
+                order.gatewayName = self.gatewayName
 
-        if data['client_oid'] in self.cancelDict:
-            req = self.cancelDict.pop(data['client_oid'])
-            self.cancelOrder(req)
+                order.symbol = d['symbol']
+                order.exchange = 'IDCM'
+                order.vtSymbol = '.'.join([order.symbol, order.exchange])
+
+                self.orderID += 1
+                order.orderID = str(self.loginTime + self.orderID)
+                order.vtOrderID = '.'.join([self.gatewayName, order.orderID])
+                self.localRemoteDict[order.orderID] = d['orderid']
+
+                order.price = float(d['price'])
+                order.totalVolume = int(d['amount'])  # 委托数量
+                order.tradedVolume = int(d['executedamount'])  # 成交数量
+                order.status = statusMapReverse[d['status']]  # 订单状态
+                order.direction, order.offset = typeMapReverse[d['type']]  # 订单类型
+
+                dt = datetime.strptime(d['timestamp'], '%Y-%m-%dT%H:%M:%S.%fZ')
+                order.orderTime = dt.strftime('%H:%M:%S')
+
+                self.gateway.onOrder(order)
+                self.orderDict[d['order_id']] = order
+        else:
+            msg = u'错误代码：%s' % (data['code'])
+            self.gateway.writeLog(msg)
+            return
 
     # ----------------------------------------------------------------------
     def onCancelOrder(self, data, request):
