@@ -65,7 +65,7 @@ def createSignature(apiKey, method, host, path, secretKey, getParams=None):
     if getParams:
         sortedParams.extend(getParams.items())
         sortedParams = list(sorted(sortedParams))
-    encodeParams = urllib.urlencode(sortedParams)
+    encodeParams = urllib.parse.urlencode(sortedParams)
     
     payload = [method, host, path, encodeParams]
     payload = '\n'.join(payload)
