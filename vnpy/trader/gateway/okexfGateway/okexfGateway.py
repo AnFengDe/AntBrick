@@ -12,16 +12,11 @@ import json
 import hashlib
 import hmac
 import sys
-import time
-import traceback
 import base64
 import zlib
 from datetime import datetime, timedelta
 from copy import copy
-from math import pow
-from urllib import urlencode
-
-from requests import ConnectionError
+from urllib.parse import urlencode
 
 from vnpy.api.rest import RestClient, Request
 from vnpy.api.websocket import WebsocketClient
