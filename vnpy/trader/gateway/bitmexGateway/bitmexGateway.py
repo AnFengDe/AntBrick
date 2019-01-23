@@ -12,11 +12,7 @@ import json
 import hashlib
 import hmac
 import sys
-import time
-import traceback
-from datetime import datetime, timedelta
 from copy import copy
-from math import pow
 from urllib.parse import urlencode
 
 from requests import ConnectionError
