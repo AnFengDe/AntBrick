@@ -870,10 +870,10 @@ class TradingWidget(QtWidgets.QFrame):
 
         # 左边部分
         labelPriceType = QtWidgets.QLabel(vtText.PRICE_TYPE)
-        labelSymbol = QtWidgets.QLabel(u'VT代码')
+        labelSymbol = QtWidgets.QLabel(u'交易对')
         labelPrice = QtWidgets.QLabel(vtText.PRICE)
         labelVolume = QtWidgets.QLabel(u'数量')
-        labelOffset = QtWidgets.QLabel(u'开平')
+        #labelOffset = QtWidgets.QLabel(u'开平')
         
         self.comboPriceType = QtWidgets.QComboBox()
         self.comboPriceType.addItems(self.priceTypeList)
@@ -894,7 +894,7 @@ class TradingWidget(QtWidgets.QFrame):
         
         gridLeft = QtWidgets.QGridLayout()
         gridLeft.addWidget(labelPriceType, 0, 0)
-        gridLeft.addWidget(labelOffset, 1, 0)
+#        gridLeft.addWidget(labelOffset, 1, 0)
         gridLeft.addWidget(labelSymbol, 2, 0)
         gridLeft.addWidget(labelPrice, 3, 0)
         gridLeft.addWidget(labelVolume, 4, 0)
@@ -994,8 +994,8 @@ class TradingWidget(QtWidgets.QFrame):
         """发单"""
         vtSymbol = str(self.lineSymbol.text())
         contract = self.mainEngine.getContract(vtSymbol)
-        if not contract:
-            return
+        #if not contract:
+            #return
 
         # 获取价格
         priceText = self.linePrice.text()
