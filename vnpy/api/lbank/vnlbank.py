@@ -17,7 +17,7 @@ import websocket
 
 
 
-REST_HOST = "https://api.lbank.info/v1"
+REST_HOST = "https://api.lbkex.info/v1"
 WEBSOCKET_HOST = 'ws://api.lbank.info/ws'
 
 
