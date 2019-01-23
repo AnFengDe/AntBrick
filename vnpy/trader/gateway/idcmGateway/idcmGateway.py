@@ -11,14 +11,13 @@ import hmac
 import sys
 import base64
 import zlib
-from datetime import datetime, timedelta
+from datetime import timedelta
 from copy import copy
-
 
 from vnpy.api.rest import RestClient, Request
 from vnpy.api.websocket import WebsocketClient
 from vnpy.trader.vtGateway import *
-from vnpy.trader.vtFunction import getJsonPath, getTempPath
+from vnpy.trader.vtFunction import getJsonPath
 
 REST_HOST = 'https://api.IDCM.cc:8323'
 WEBSOCKET_HOST = 'wss://real.idcm.cc:10330/websocket'
@@ -157,7 +156,7 @@ class IdcmGateway(VtGateway):
     def queryInfo(self):
         """"""
         self.restApi.queryAccount()
-        self.restApi.queryPosition()
+        #self.restApi.queryPosition()
 
     def writeLog(self, msg):
         """"""
@@ -169,10 +168,9 @@ class IdcmGateway(VtGateway):
         event.dict_['data'] = log
         self.eventEngine.put(event)
 
-########################################################################
+
 class IdcmRestApi(RestClient):
     """REST API实现"""
-
     # ----------------------------------------------------------------------
     def __init__(self, gateway):
         """Constructor"""
@@ -196,18 +194,17 @@ class IdcmRestApi(RestClient):
     # ----------------------------------------------------------------------
     def sign(self, request):
         """IDCM的签名方案"""
-        # 生成签名
         if request.data:
             request.data = json.dumps(request.data)
 
-        input = request.data
-        signature = generateSignature(input, self.secretKey)
+        inputdata = request.data
+        signature = generateSignature(inputdata, self.secretKey)
 
         # 添加表头
         request.headers = {
             'X-IDCM-APIKEY': self.apiKey,
             'X-IDCM-SIGNATURE': signature,
-            'X-IDCM-INPUT': input,
+            'X-IDCM-INPUT': inputdata,
             'Content-Type': 'application/json'
         }
         return request
@@ -296,14 +293,6 @@ class IdcmRestApi(RestClient):
         self.addRequest('POST', '/api/v1/getuserinfo', data="1",
                         callback=self.onQueryAccount)
 
-    # ----------------------------------------------------------------------
-    def queryPosition(self):
-        """"""
-        self.addRequest('GET', '/api/futures/v3/position',
-                        callback=self.onQueryPosition)
-
-        # ----------------------------------------------------------------------
-
     def queryOrder(self):
         """"""
         for symbol in self.symbols:
@@ -363,34 +352,6 @@ class IdcmRestApi(RestClient):
             self.gateway.writeLog(msg)
             return
 
-    def onQueryPosition(self, data, request):
-        """"""
-        if not data['holding']:
-            return
-
-        for d in data['holding'][0]:
-            longPosition = VtPositionData()
-            longPosition.gatewayName = self.gatewayName
-            longPosition.symbol = d['instrument_id']
-            longPosition.exchange = 'OKEX'
-            longPosition.vtSymbol = '.'.join([longPosition.symbol, longPosition.exchange])
-            longPosition.direction = DIRECTION_LONG
-            longPosition.vtPositionName = '.'.join([longPosition.vtSymbol, longPosition.direction])
-            longPosition.position = int(d['long_qty'])
-            longPosition.frozen = longPosition.position - int(d['long_avail_qty'])
-            longPosition.price = float(d['long_avg_cost'])
-
-            shortPosition = copy(longPosition)
-            shortPosition.direction = DIRECTION_SHORT
-            shortPosition.vtPositionName = '.'.join([shortPosition.vtSymbol, shortPosition.direction])
-            shortPosition.position = int(d['short_qty'])
-            shortPosition.frozen = shortPosition.position - int(d['short_avail_qty'])
-            shortPosition.price = float(d['short_avg_cost'])
-
-            self.gateway.onPosition(longPosition)
-            self.gateway.onPosition(shortPosition)
-
-    # ----------------------------------------------------------------------
     def onQueryOrder(self, data, request):
         if data['result'] == 1:
             for d in data['data']:
@@ -771,7 +732,7 @@ class IdcmWebsocketApi(WebsocketClient):
 # ----------------------------------------------------------------------
 def generateSignature(msg, apiSecret):
     """签名V3"""
-    return base64.b64encode(hmac.new(apiSecret, msg.encode(encoding='UTF8'), hashlib.sha384).digest())
+    return base64.b64encode(hmac.new(bytes(apiSecret,'utf-8'), msg.encode(encoding='UTF8'), hashlib.sha384).digest())
 
 
 symbolMap = {}  # 代码映射v3 symbol:(v1 currency, contractType)
