@@ -8,7 +8,7 @@ import zmq
 from msgpack import packb, unpackb
 from json import dumps, loads
 
-import cPickle
+import _pickle as cPickle
 pDumps = cPickle.dumps
 pLoads = cPickle.loads
 
