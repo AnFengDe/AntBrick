@@ -14,3 +14,4 @@ qtpy
 psutil
 ta-lib
 futu-api
+zmq
