@@ -3,7 +3,7 @@
 
 import sys
 import traceback
-from Queue import Empty, Queue
+from queue import Empty, Queue
 from datetime import datetime
 from multiprocessing.dummy import Pool
 
