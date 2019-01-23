@@ -13,7 +13,7 @@ from time import sleep
 import websocket    
 
 # 常量定义
-OKEX_SPOT_HOST = 'wss://real.okex.com:10441/websocket'
+OKEX_SPOT_HOST = 'wss://real.okex.com:10442/ws/v3'
 
 
 SPOT_CURRENCY = ["usdt",
@@ -70,6 +70,7 @@ class OkexApi(object):
         self.host = ''          # 服务器
         self.apiKey = ''        # 用户名
         self.secretKey = ''     # 密码
+        self.passphrase = ''
   
         self.active = False     # 工作状态
         self.ws = None          # websocket应用对象
@@ -119,11 +120,12 @@ class OkexApi(object):
             self.reconnecting = False
         
     #----------------------------------------------------------------------
-    def connect(self, host, apiKey, secretKey, trace=False):
+    def connect(self, host, apiKey, secretKey, passphrase, trace=False):
         """连接"""
         self.host = host
         self.apiKey = apiKey
         self.secretKey = secretKey
+        self.passphrase = passphrase
         
         websocket.enableTrace(trace)
         
