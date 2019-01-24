@@ -158,10 +158,11 @@ class VtTradeData(VtBaseData):
         self.vtOrderID = EMPTY_STRING           # 订单在vt系统中的唯一编号，通常是 Gateway名.订单编号
         
         # 成交相关
-        self.direction = EMPTY_UNICODE          # 成交方向
-        self.offset = EMPTY_UNICODE             # 成交开平仓
-        self.price = EMPTY_FLOAT                # 成交价格
-        self.volume = EMPTY_INT                 # 成交数量
+        self.direction = EMPTY_UNICODE          # 交易方向   0 买入 1 卖出
+        self.orderType = EMPTY_UNICODE          # 订单类型  0  市场价  1	 限价
+        self.price = EMPTY_FLOAT                # 委托价格
+        self.avgprice = EMPTY_FLOAT             # 平均成交价格
+        self.volume = EMPTY_FLOAT               # 成交数量
         self.tradeTime = EMPTY_STRING           # 成交时间
 
     #----------------------------------------------------------------------
@@ -217,7 +218,7 @@ class VtOrderData(VtBaseData):
         super(VtOrderData, self).__init__()
         
         # 代码编号相关
-        self.symbol = EMPTY_STRING              # 合约代码
+        self.symbol = EMPTY_STRING              # 交易对代码
         self.exchange = EMPTY_STRING            # 交易所代码
         self.vtSymbol = EMPTY_STRING  # 索引，统一格式：f"{symbol}.{exchange}"
         
@@ -225,13 +226,13 @@ class VtOrderData(VtBaseData):
         self.vtOrderID = EMPTY_STRING  # 索引，统一格式：f"{gatewayName}.{orderId}"
         
         # 报单相关
-        self.direction = EMPTY_UNICODE          # 报单方向
-        self.offset = EMPTY_UNICODE             # 报单开平仓
+        self.direction = EMPTY_UNICODE          # 报单方向 买入/卖出
+        self.orderType = EMPTY_UNICODE          # 订单类型 0	市场价  1	 限价
         self.price = EMPTY_FLOAT                # 报单价格
         self.totalVolume = EMPTY_INT            # 报单总数量
         self.tradedVolume = EMPTY_INT           # 报单成交数量
-        self.status = EMPTY_UNICODE             # 报单状态
-        
+        self.status = EMPTY_UNICODE             # 报单状态  -2	取消交易 -1	无效 0	等待成交  1	部份交易  2	全部成交 3	已申报
+
         self.orderTime = EMPTY_STRING           # 发单时间
         self.cancelTime = EMPTY_STRING          # 撤单时间
         
