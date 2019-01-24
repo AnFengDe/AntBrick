@@ -588,6 +588,7 @@ class DataEngine(object):
     #----------------------------------------------------------------------
     def getPositionDetail(self, vtSymbol):
         """查询持仓细节"""
+        # TODO
         if vtSymbol in self.detailDict:
             detail = self.detailDict[vtSymbol]
         else:
