@@ -548,6 +548,7 @@ class OrderMonitor(BasicMonitor):
         d['symbol'] = {'chinese':vtText.CONTRACT_SYMBOL, 'cellType':BasicCell}
         d['direction'] = {'chinese':vtText.DIRECTION, 'cellType':DirectionCell}
         d['price'] = {'chinese':vtText.PRICE, 'cellType':BasicCell}
+        d['avgprice'] = {'chinese': vtText.AVGPRICE, 'cellType': BasicCell}
         d['totalVolume'] = {'chinese':vtText.ORDER_VOLUME, 'cellType':BasicCell}
         d['tradedVolume'] = {'chinese':vtText.TRADED_VOLUME, 'cellType':BasicCell}
         d['status'] = {'chinese':vtText.ORDER_STATUS, 'cellType':BasicCell}
