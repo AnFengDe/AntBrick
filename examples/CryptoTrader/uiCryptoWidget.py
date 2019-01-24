@@ -376,13 +376,13 @@ class BasicMonitor(QtWidgets.QTableWidget):
         path, fileType = QtWidgets.QFileDialog.getSaveFileName(self, vtText.SAVE_DATA, '', 'CSV(*.csv)')
 
         try:
-            #if not path.isEmpty():
             if path:
-                with open(unicode(path), 'wb') as f:
+                with open(str(path), 'wb') as f:
                     writer = csv.writer(f)
                     
                     # 保存标签
                     headers = [header.encode('gbk') for header in self.headerList]
+                    print(headers)
                     writer.writerow(headers)
                     
                     # 保存每行内容
@@ -396,8 +396,10 @@ class BasicMonitor(QtWidgets.QTableWidget):
                             else:
                                 rowdata.append('')
                         writer.writerow(rowdata)     
-        except IOError:
-            pass
+        #except IOError:
+        #    pass
+        except Exception as e:
+            print(e)
 
     #----------------------------------------------------------------------
     def initMenu(self):
