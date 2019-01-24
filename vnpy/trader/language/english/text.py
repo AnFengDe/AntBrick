@@ -24,6 +24,7 @@ ORDER_ID = u'Order ID'
 DIRECTION = u'Direction'
 OFFSET = u'Offset'
 PRICE = u'Price'
+AVGPRICE = u'Avg Price'
 TRADE_TIME = u'Fill Time'
 
 ORDER_VOLUME = u'Order Volume'
