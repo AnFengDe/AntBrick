@@ -41,8 +41,51 @@ typeMap[(PRICETYPE_LIMITPRICE)] = '1'
 #typeMap[(DIRECTION_SHORT, OFFSET_CLOSE)] = '4'
 typeMapReverse = {v: k for k, v in typeMap.items()}
 
+#错误码对应表
+errMsgMap = {}
+errMsgMap[10001] = '验证失败'
+errMsgMap[10002] = '系统错误'
+errMsgMap[10003] = '该连接已经请求了其他用户的实时交易数据'
+errMsgMap[10005] = 'SecretKey不存在'
+errMsgMap[10006] = 'Api_key不存在'
+errMsgMap[10007] = '签名不匹配'
+errMsgMap[10017] = 'API鉴权失败'
 
-########################################################################
+errMsgMap[41000] = '签名不匹配'
+errMsgMap[41017] = 'API鉴权失败'
+
+errMsgMap[51003] = '账号被冻结'
+errMsgMap[51004] = '用户不存在'
+errMsgMap[51011] = '交易品种不存在'
+
+errMsgMap[51018] = '虚拟币不存在'
+errMsgMap[51022] = '申请数量太少'
+errMsgMap[51021] = '虚拟币资产信息不足'
+errMsgMap[51023] = '可用数量不足'
+errMsgMap[51026] = '数据不存在'
+errMsgMap[51027] = '提币申请状态只有在，申请状态才能撤销'
+
+errMsgMap[51040] = '货币资产信息不存在'
+errMsgMap[51041] = '现金资产不足'
+errMsgMap[51043] = '申报价无效'
+errMsgMap[51044] = '申报数量无效'
+errMsgMap[51045] = '最小交易量无效'
+errMsgMap[51046] = '最小金额无效'
+errMsgMap[51047] = '金额变动量无效'
+errMsgMap[51048] = '最小申报变动量无效'
+
+errMsgMap[51089] = '非法的站点'
+errMsgMap[51092] = '访问过快'
+errMsgMap[51111] = '钱包余额不足'
+errMsgMap[51112] = '申报金额无效'
+
+
+def getErrMsg(errcode):
+    return errMsgMap[errcode]
+    msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsg)
+    self.gateway.writeLog(msg)
+
+
 class IdcmGateway(VtGateway):
     """IDCM接口"""
 
@@ -320,7 +363,10 @@ class IdcmRestApi(RestClient):
             tick.lastPrice = data['data']['last']
             tick.volume = data['data']['vol']
         else:
-            msg = u'错误代码：%s, 错误信息：%s' % (data['code'], data['err-msg'])
+            try:
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+            except Exception as e:
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
 
     def onQueryAccount(self, data, request):
@@ -349,7 +395,10 @@ class IdcmRestApi(RestClient):
             self.queryOrder()
             self.gateway.writeLog(u'资金信息查询成功')
         else:
-            msg = u'错误代码：%s' % (data['code'])
+            try:
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+            except Exception as e:
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
             return
 
@@ -380,7 +429,10 @@ class IdcmRestApi(RestClient):
                 self.gateway.onOrder(order)
                 self.orderDict[d['order_id']] = order
         else:
-            msg = u'错误代码：%s' % (data['code'])
+            try:
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+            except Exception as e:
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
             return
 
@@ -430,7 +482,10 @@ class IdcmRestApi(RestClient):
                 self.gateway.onOrder(order)
                 self.orderDict[d['order_id']] = order
         else:
-            msg = u'错误代码：%s' % (data['code'])
+            try:
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+            except Exception as e:
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
             return
 
