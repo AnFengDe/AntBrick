@@ -13,7 +13,7 @@ Using the vn.py project, institutional investors and professional traders, such 
 
 1. Prepare a computer with Windows 7/8/10/Server 2008 (64-bit) installed.
 
-2. Install [Anaconda 5.2.0](http://www.continuum.io/downloads), please make sure you download **Python 2.7 (32-bit)**.
+2. Install [Anaconda 5.2.2](http://www.continuum.io/downloads), please make sure you download **Python 3.7 (64-bit)**.
 
 3. Install [MongoDB](https://www.mongodb.org/downloads#production), please register MongoDB as Windows Service.
 
