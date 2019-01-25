@@ -377,12 +377,11 @@ class BasicMonitor(QtWidgets.QTableWidget):
 
         try:
             if path:
-                with open(str(path), 'wb') as f:
-                    writer = csv.writer(f)
+                with open(str(path), 'w',newline='') as csvf:
+                    writer = csv.writer(csvf)
                     
                     # 保存标签
-                    headers = [header.encode('gbk') for header in self.headerList]
-                    print(headers)
+                    headers = [header for header in self.headerList]
                     writer.writerow(headers)
                     
                     # 保存每行内容
@@ -392,12 +391,11 @@ class BasicMonitor(QtWidgets.QTableWidget):
                             item = self.item(row, column)
                             if item is not None:
                                 rowdata.append(
-                                    text_type(item.text()).encode('gbk'))
+                                    text_type(item.text()))
                             else:
                                 rowdata.append('')
-                        writer.writerow(rowdata)     
-        #except IOError:
-        #    pass
+                        #print(rowdata)
+                        writer.writerow(rowdata)
         except Exception as e:
             print(e)
 
