@@ -15,7 +15,8 @@ from datetime import timedelta
 from copy import copy
 
 from vnpy.api.rest import RestClient, Request
-from vnpy.api.websocket import WebsocketClient
+#from vnpy.api.websocket import WebsocketClient
+from vnpy.api.idcm import IdcmWebsocketApi
 from vnpy.trader.vtGateway import *
 from vnpy.trader.vtFunction import getJsonPath
 
@@ -104,7 +105,7 @@ class IdcmGateway(VtGateway):
         self.qryEnabled = False         # 是否要启动循环查询
 
         self.restApi = IdcmRestApi(self)
-        self.wsApi = IdcmWebsocketApi(self)
+        self.wsApi = WebsocketApi(self)
 
         self.fileName = self.gatewayName + '_connect.json'
         self.filePath = getJsonPath(self.fileName, __file__)
@@ -136,10 +137,12 @@ class IdcmGateway(VtGateway):
             return
 
         # 创建行情和交易接口对象
-        self.restApi.connect(symbols, apiKey, secretKey)
-        # self.wsApi.connect(apiKey, secretKey, symbols)
+        self.restApi.connect(apiKey, secretKey, symbols)
+        self.wsApi.connect(apiKey, secretKey, symbols)
 
-    # ----------------------------------------------------------------------
+        # 初始化并启动查询
+        self.initQuery()
+
     def subscribe(self, subscribeReq):
         """订阅行情"""
         self.wsApi.subscribe(subscribeReq)
@@ -251,7 +254,7 @@ class IdcmRestApi(RestClient):
             request.data = json.dumps(request.data)
 
         inputdata = request.data
-        signature = generateSignature(inputdata, self.secretKey)
+        signature = self.generateSignature(inputdata, self.secretKey)
 
         # 添加表头
         request.headers = {
@@ -262,8 +265,12 @@ class IdcmRestApi(RestClient):
         }
         return request
 
+    def generateSignature(self, msg, apiSecret):
+        """签名"""
+        return base64.b64encode(hmac.new(bytes(apiSecret,'utf-8'), msg.encode(encoding='UTF8'), hashlib.sha384).digest())
+
     # ----------------------------------------------------------------------
-    def connect(self, symbols, apiKey, secretKey, sessionCount=1):
+    def connect(self, apiKey, secretKey, symbols, sessionCount=1):
         """连接服务器"""
         self.symbols = symbols
         self.apiKey = apiKey
@@ -593,22 +600,18 @@ class IdcmRestApi(RestClient):
 
 
 ########################################################################
-class IdcmWebsocketApi(WebsocketClient):
-    """"""
-
-    # ----------------------------------------------------------------------
+class WebsocketApi(IdcmWebsocketApi):
     def __init__(self, gateway):
         """Constructor"""
-        super(IdcmWebsocketApi, self).__init__()
+        super(WebsocketApi, self).__init__()
 
         self.gateway = gateway
         self.gatewayName = gateway.gatewayName
 
         self.apiKey = ''
         self.secretKey = ''
+        self.symbols = ''
 
-        #self.orderDict = gateway.orderDict
-        #self.localRemoteDict = gateway.localRemoteDict
         self.accountDict = gateway.accountDict
         self.orderDict = gateway.orderDict
         self.orderLocalDict = gateway.orderLocalDict
@@ -629,12 +632,27 @@ class IdcmWebsocketApi(WebsocketClient):
         """"""
         self.apiKey = apiKey
         self.secretKey = secretKey
+        self.symbols = symbols
 
-        self.init(WEBSOCKET_HOST)
         self.start()
+        """
+        channels = [
+            'lh_sub_spot_eth_btc_depth_20',
+            'lh_sub_spot_eth_btc_trades',
+            'lh_sub_spot_eth_btc_ticker'
+        ]
 
-        for symbol in symbols:
-            self.subscribeMarketData(symbol)
+        signature = self.sign(self.apiKey, self.secretKey)
+        for channel in channels:
+            req = {
+                'event': 'addChannel',
+                'channel': channel
+            }
+            self.sendReq(req)
+        """
+
+        #for symbol in symbols:
+        #    self.subscribeMarketData(symbol)
 
     def subscribeMarketData(self, symbol):
         """订阅行情"""
@@ -645,10 +663,26 @@ class IdcmWebsocketApi(WebsocketClient):
         tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
         self.tickDict[symbol] = tick
 
-    def onConnected(self):
+    def onConnect(self):
         """连接回调"""
         self.gateway.writeLog(u'Websocket API连接成功')
         self.login()
+
+    def onData(self, data):
+        """数据回调"""
+        if 'Event' in data:
+            if data['Event'] == "login":
+                if data["Result"]:
+                    # 连接成功,开始订阅
+                    self.subscribe()
+                else:
+                    self.gateway.writeLog("login error ", data["Errorcode"])
+        else:
+            print(data)
+        #elif 'ticker' in type_:
+        #    self.onTick(data)
+        #elif 'depth' in type_:
+        #    self.onDepth(data)
 
     # ----------------------------------------------------------------------
     def onDisconnected(self):
@@ -665,9 +699,9 @@ class IdcmWebsocketApi(WebsocketClient):
         if callback:
             callback(d)
 
-    # ----------------------------------------------------------------------
+    """
     def onError(self, exceptionType, exceptionValue, tb):
-        """Python错误回调"""
+        #Python错误回调
         e = VtErrorData()
         e.gatewayName = self.gatewayName
         e.errorID = exceptionType
@@ -675,28 +709,54 @@ class IdcmWebsocketApi(WebsocketClient):
         self.gateway.onError(e)
 
         sys.stderr.write(self.exceptionDetail(exceptionType, exceptionValue, tb))
+    """
+
+    @staticmethod
+    def sign(apiKey, secretkey):
+        # 拼接apikey = {你的apikey} & secret_key = {你的secretkey} 进行MD5，结果大写
+        convertStr = "apikey=" + apiKey + "&secret_key=" + secretkey
+        return hashlib.md5(convertStr.encode()).hexdigest().upper()
 
     def login(self):
-        """"""
-        timestamp = str(time.time())
-
-        msg = timestamp + 'GET' + '/users/self/verify'
-        signature = generateSignature(msg, self.secretKey)
-
-        req = {
-            "event": "login",
-            "parameters": {
-                "api_key": self.apiKey,
-                #"timestamp": timestamp,
-                "sign": signature
+        try:
+            signature = self.sign(self.apiKey, self.secretKey)
+            #print('signature is ', signature)
+            req = {
+                "event": "login",
+                "parameters": {
+                    "ApiKey": self.apiKey,
+                    "Sign": signature
+                }
             }
-        }
-        self.sendPacket(req)
+            self.sendReq(req)
 
-        self.callbackDict['login'] = self.onLogin
+            self.callbackDict['login'] = self.onLogin
+        except Exception as e:
+            print(e)
 
-    # ----------------------------------------------------------------------
-    def subscribe(self, subscribeReq):
+    def subscribe(self):
+        """"""
+        l = []
+        for symbol in self.symbols:
+            l.append('ticker.' + symbol)
+            l.append('depth.L20.' + symbol)
+            if 1:  # debug only
+                tick = VtTickData()
+                tick.gatewayName = self.gatewayName
+                tick.symbol = symbol
+                tick.exchange = EXCHANGE_IDCM
+                tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
+                self.tickDict[symbol] = tick
+
+        for symbol in self.symbols:
+            channel1 = "idcm_sub_spot_" + symbol + "_depth_5"
+            req = {
+                'event': 'addChannel',
+                'channel': channel1
+            }
+            self.sendReq(req)
+
+    def oldsubscribe(self, subscribeReq):
         """"""
         # V3到V1的代码转换
         currency, contractType = convertSymbol(subscribeReq.symbol)
@@ -884,12 +944,6 @@ class IdcmWebsocketApi(WebsocketClient):
                 position.direction = DIRECTION_SHORT
             position.vtPositionName = '.'.join([position.vtSymbol, position.direction])
             self.gateway.onPosition(position)
-
-
-# ----------------------------------------------------------------------
-def generateSignature(msg, apiSecret):
-    """签名V3"""
-    return base64.b64encode(hmac.new(bytes(apiSecret,'utf-8'), msg.encode(encoding='UTF8'), hashlib.sha384).digest())
 
 
 symbolMap = {}  # 代码映射v3 symbol:(v1 currency, contractType)
