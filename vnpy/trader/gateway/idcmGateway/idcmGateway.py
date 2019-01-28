@@ -564,7 +564,7 @@ class IdcmRestApi(RestClient):
             self.gateway.writeLog(msg)
 
             order.status = STATUS_REJECTED
-            self.gateway.onOrder(order)  # TODO may cause bug
+            #self.gateway.onOrder(order)  # TODO may cause bug
         else:
             orderID = data['data']
             strOrderID = str(orderID)
