@@ -3,9 +3,9 @@
     {
       "gateway": "IDCM",
       "symbols": [
-        "btc/usdt",
-        "eth/usdt",
-        "eth/btc"
+        "BTC-USDT",
+        "ETH-USDT",
+        "ETH-BTC"
       ]
     }
   ]
