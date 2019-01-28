@@ -858,7 +858,7 @@ class TradingWidget(QtWidgets.QFrame):
         self.registerEvent()
         self.fullSymbols = {}  # 所有交易所的全部交易对
 
-        #读取交易对信息
+        # 读取交易对信息
         self.load_symbols()
 
     def load_symbols(self):
@@ -963,11 +963,12 @@ class TradingWidget(QtWidgets.QFrame):
         self.setLayout(hbox)
 
         # 关联更新
-        self.comboGateway.currentIndexChanged.connect(self.updateSymbol)
+        self.comboGateway.currentIndexChanged.connect(self.updateSymbolForGateway)  # 根据交易所变化选择交易对
+        self.comboSymbol.currentTextChanged.connect(self.updateVtSymbol)  # 写入当前交易对
         #self.lineSymbol.returnPressed.connect(self.updateSymbol)
         self.depthMonitor.itemDoubleClicked.connect(self.updatePrice)
 
-    def updateSymbol(self):
+    def updateSymbolForGateway(self):
         """根据交易所读取交易对"""
         self.curGateway = str(self.comboGateway.currentText())
         #print(self.curGateway)
@@ -991,25 +992,25 @@ class TradingWidget(QtWidgets.QFrame):
         #req.symbol = contract.symbol
         #self.mainEngine.subscribe(req, contract.gatewayName)
 
-    """
-    def updateSymbol(self):
-        self.vtSymbol = str(self.lineSymbol.text())
-        contract = self.mainEngine.getContract(self.vtSymbol)
+    # output style is BTC-USDT.IDCM
+    def updateVtSymbol(self):
+        self.vtSymbol = self.comboSymbol.currentText() + "." + self.comboGateway.currentText()
+        #print("updateVtSymbol , vtsymbol is ", self.vtSymbol)
+        #contract = self.mainEngine.getContract(self.vtSymbol)
         
-        if not contract:
-            return
+        #if not contract:
+        #    return
         
         # 清空价格数量
-        self.linePrice.clear()
-        self.lineVolume.clear()
+        #self.linePrice.clear()
+        #self.lineVolume.clear()
 
-        self.depthMonitor.updateVtSymbol(self.vtSymbol)
+        #self.depthMonitor.updateVtSymbol(self.vtSymbol)
         
         # 订阅合约
-        req = VtSubscribeReq()
-        req.symbol = contract.symbol
-        self.mainEngine.subscribe(req, contract.gatewayName)
-    """
+        #req = VtSubscribeReq()
+        #req.symbol = contract.symbol
+        #self.mainEngine.subscribe(req, contract.gatewayName)
 
     #----------------------------------------------------------------------
     def updateTick(self, event):
@@ -1333,5 +1334,3 @@ class SettingEditor(QtWidgets.QWidget):
         # 显示界面
         super(SettingEditor, self).show()
 
-    
-    
