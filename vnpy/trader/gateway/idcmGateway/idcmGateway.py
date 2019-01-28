@@ -88,6 +88,15 @@ def getErrMsg(errcode):
     self.gateway.writeLog(msg)
 
 
+# input idcm_sub_spot_BTC-USDT_depth_5
+# output BTC-USDT
+def getSymbolFromChannel(channel):
+    start = channel.find("spot_")
+    start += 5
+    end = channel.find("_", start)
+    return channel[start:end]
+
+
 class IdcmGateway(VtGateway):
     """IDCM接口"""
 
@@ -677,12 +686,11 @@ class WebsocketApi(IdcmWebsocketApi):
                     self.subscribe()
                 else:
                     self.gateway.writeLog("login error ", data["Errorcode"])
-        else:
-            print(data)
-        #elif 'ticker' in type_:
-        #    self.onTick(data)
-        #elif 'depth' in type_:
-        #    self.onDepth(data)
+        elif 'channel' in data:
+            if 'depth' in data['channel']:
+                self.onDepth(data)
+            elif 'ticker' in data['channel']:
+                self.onTick(data)
 
     # ----------------------------------------------------------------------
     def onDisconnected(self):
@@ -720,7 +728,6 @@ class WebsocketApi(IdcmWebsocketApi):
     def login(self):
         try:
             signature = self.sign(self.apiKey, self.secretKey)
-            #print('signature is ', signature)
             req = {
                 "event": "login",
                 "parameters": {
@@ -729,8 +736,7 @@ class WebsocketApi(IdcmWebsocketApi):
                 }
             }
             self.sendReq(req)
-
-            self.callbackDict['login'] = self.onLogin
+            #self.callbackDict['login'] = self.onLogin
         except Exception as e:
             print(e)
 
@@ -749,6 +755,7 @@ class WebsocketApi(IdcmWebsocketApi):
                 self.tickDict[symbol] = tick
 
         for symbol in self.symbols:
+            # 订阅行情深度,支持5，10，20档
             channel1 = "idcm_sub_spot_" + symbol + "_depth_5"
             req = {
                 'event': 'addChannel',
@@ -756,6 +763,15 @@ class WebsocketApi(IdcmWebsocketApi):
             }
             self.sendReq(req)
 
+            # 订阅行情数据
+            channel1 = "idcm_sub_spot_" + symbol + "_ticker"
+            req = {
+                'event': 'addChannel',
+                'channel': channel1
+            }
+            self.sendReq(req)
+
+    """
     def oldsubscribe(self, subscribeReq):
         """"""
         # V3到V1的代码转换
@@ -791,10 +807,10 @@ class WebsocketApi(IdcmWebsocketApi):
         tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
         self.tickDict[tick.symbol] = tick
 
-    # ----------------------------------------------------------------------
     def onLogin(self, d):
         """"""
         data = d['data']
+        print("onLogin")
         if not data['result']:
             return
 
@@ -806,15 +822,14 @@ class WebsocketApi(IdcmWebsocketApi):
         self.callbackDict['ok_sub_futureusd_trades'] = self.onTrade
         self.callbackDict['ok_sub_futureusd_userinfo'] = self.onAccount
         self.callbackDict['ok_sub_futureusd_positions'] = self.onPosition
+    """
 
     # ----------------------------------------------------------------------
     def onTick(self, d):
         """"""
-        data = d['data']
-        channel = d['channel']
-
-        symbol = self.channelSymbolDict[channel]
+        symbol = getSymbolFromChannel(d['channel'])
         tick = self.tickDict[symbol]
+        data = d['data']
 
         tick.lastPrice = float(data['last'])
         tick.highPrice = float(data['high'])
@@ -826,29 +841,45 @@ class WebsocketApi(IdcmWebsocketApi):
 
     # ----------------------------------------------------------------------
     def onDepth(self, d):
-        """"""
-        data = d['data']
-        channel = d['channel']
+        try:
+            symbol = getSymbolFromChannel(d['channel'])
+            tick = self.tickDict[symbol]
 
-        symbol = self.channelSymbolDict[channel]
-        tick = self.tickDict[symbol]
+            bids = d['data']['bids']
+            asks = d['data']['asks']
 
-        for n, buf in enumerate(data['bids']):
-            price, volume = buf[:2]
-            tick.__setattr__('bidPrice%s' % (n + 1), float(price))
-            tick.__setattr__('bidVolume%s' % (n + 1), int(volume))
+            tick.bidPrice1 = bids[0]['Price']
+            tick.bidPrice2 = bids[1]['Price']
+            tick.bidPrice3 = bids[2]['Price']
+            tick.bidPrice4 = bids[3]['Price']
+            tick.bidPrice5 = bids[4]['Price']
 
-        for n, buf in enumerate(data['asks']):
-            price, volume = buf[:2]
-            tick.__setattr__('askPrice%s' % (5 - n), float(price))
-            tick.__setattr__('askVolume%s' % (5 - n), int(volume))
+            tick.askPrice1 = asks[0]['Price']
+            tick.askPrice2 = asks[1]['Price']
+            tick.askPrice3 = asks[2]['Price']
+            tick.askPrice4 = asks[3]['Price']
+            tick.askPrice5 = asks[4]['Price']
 
-        dt = datetime.fromtimestamp(data['timestamp'] / 1000)
-        tick.date = dt.strftime('%Y%m%d')
-        tick.time = dt.strftime('%H:%M:%S')
+            tick.bidVolume1 = bids[0]['Amount']
+            tick.bidVolume2 = bids[1]['Amount']
+            tick.bidVolume3 = bids[2]['Amount']
+            tick.bidVolume4 = bids[3]['Amount']
+            tick.bidVolume5 = bids[4]['Amount']
 
-        tick = copy(tick)
-        self.gateway.onTick(tick)
+            tick.askVolume1 = asks[0]['Amount']
+            tick.askVolume2 = asks[1]['Amount']
+            tick.askVolume3 = asks[2]['Amount']
+            tick.askVolume4 = asks[3]['Amount']
+            tick.askVolume5 = asks[4]['Amount']
+
+            tick.datetime = datetime.fromtimestamp(d['timestamp'])
+            tick.date = tick.datetime.strftime('%Y%m%d')
+            tick.time = tick.datetime.strftime('%H:%M:%S')
+
+            #if tick.lastPrice:
+            self.gateway.onTick(copy(tick))
+        except Exception as e:
+            print(e)
 
     # ----------------------------------------------------------------------
     def onTrade(self, d):
