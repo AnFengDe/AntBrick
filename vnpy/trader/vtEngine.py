@@ -176,7 +176,7 @@ class MainEngine(object):
             appEngine.stop()
         
         # 保存数据引擎里的合约数据到硬盘
-        self.dataEngine.saveContracts()
+        #self.dataEngine.saveContracts()
     
     #----------------------------------------------------------------------
     def writeLog(self, content):
