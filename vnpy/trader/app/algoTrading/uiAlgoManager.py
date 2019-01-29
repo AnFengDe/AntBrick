@@ -508,7 +508,7 @@ class AlgoManager(QtWidgets.QWidget):
         try:
             with open(text_type(path)) as f:
                 buf = [line.encode('UTF-8') for line in f]
-            
+
             reader = csv.DictReader(buf)
             l = []
             
@@ -529,17 +529,19 @@ class AlgoManager(QtWidgets.QWidget):
     def saveSettingFromCsv(self):
         """从CSV加载配置到数据库"""
         path, fileType = QtWidgets.QFileDialog.getOpenFileName(self, u'加载算法配置', '', 'CSV(*.csv)')
-        l = self.loadCsv(path)
-        for setting in l:
-            self.algoEngine.saveAlgoSetting(setting)
+        if path:
+            l = self.loadCsv(path)
+            for setting in l:
+                self.algoEngine.saveAlgoSetting(setting)
     
     #----------------------------------------------------------------------
     def addAlgoFromCsv(self):
         """从CSV启动一篮子算法"""
         path, fileType = QtWidgets.QFileDialog.getOpenFileName(self, u'启动篮子算法', '', 'CSV(*.csv)        ')
-        l = self.loadCsv(path)
-        for setting in l:
-            self.algoEngine.addAlgo(setting)
+        if path:
+            l = self.loadCsv(path)
+            for setting in l:
+                self.algoEngine.addAlgo(setting)
     
     #----------------------------------------------------------------------
     def startRpc(self):
