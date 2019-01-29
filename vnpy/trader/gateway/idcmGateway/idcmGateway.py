@@ -170,7 +170,7 @@ class IdcmGateway(VtGateway):
     def close(self):
         """关闭"""
         self.restApi.stop()
-        self.wsApi.stop()
+        self.wsApi.close()
 
     # ----------------------------------------------------------------------
     def initQuery(self):
@@ -741,11 +741,10 @@ class WebsocketApi(IdcmWebsocketApi):
             print(e)
 
     def subscribe(self):
-        """"""
-        l = []
+        #l = []
         for symbol in self.symbols:
-            l.append('ticker.' + symbol)
-            l.append('depth.L20.' + symbol)
+            #l.append('ticker.' + symbol)
+            #l.append('depth.L20.' + symbol)
             if 1:  # debug only
                 tick = VtTickData()
                 tick.gatewayName = self.gatewayName
@@ -881,9 +880,9 @@ class WebsocketApi(IdcmWebsocketApi):
         except Exception as e:
             print(e)
 
+"""
     # ----------------------------------------------------------------------
     def onTrade(self, d):
-        """"""
         data = d['data']
         order = self.orderDict.get(str(data['orderid']), None)
         if not order:
@@ -953,7 +952,6 @@ class WebsocketApi(IdcmWebsocketApi):
 
     # ----------------------------------------------------------------------
     def onPosition(self, d):
-        """"""
         data = d['data']
 
         for buf in data['positions']:
@@ -982,7 +980,7 @@ symbolMap = {}  # 代码映射v3 symbol:(v1 currency, contractType)
 
 # ----------------------------------------------------------------------
 def convertSymbol(symbol3):
-    """转换代码"""
+    # 转换代码
     if symbol3 in symbolMap:
         return symbolMap[symbol3]
 
@@ -1009,10 +1007,10 @@ def convertSymbol(symbol3):
 
 # ----------------------------------------------------------------------
 def printDict(d):
-    """"""
     print('-' * 30)
     l = d.keys()
     l.sort()
     for k in l:
         print(k, d[k])
 
+"""
