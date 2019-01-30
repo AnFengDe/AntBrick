@@ -1230,6 +1230,48 @@ class ContractManager(QtWidgets.QWidget):
 
 
 ########################################################################
+class KlineManager(QtWidgets.QWidget):
+    """K线管理组件"""
+    # ----------------------------------------------------------------------
+    def __init__(self, mainEngine, parent=None):
+        """Constructor"""
+        super(KlineManager, self).__init__(parent=parent)
+
+        self.mainEngine = mainEngine
+
+        self.initUi()
+
+    # ----------------------------------------------------------------------
+    def initUi(self):
+        """初始化界面"""
+        self.setWindowTitle(vtText.CONTRACT_SEARCH)
+
+        self.lineFilter = QtWidgets.QLineEdit()
+        self.buttonFilter = QtWidgets.QPushButton(vtText.SEARCH)
+        self.buttonFilter.clicked.connect(self.filterContract)
+        self.monitor = ContractMonitor(self.mainEngine)
+        self.monitor.refresh()
+
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.addWidget(self.lineFilter)
+        hbox.addWidget(self.buttonFilter)
+        hbox.addStretch()
+
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addLayout(hbox)
+        vbox.addWidget(self.monitor)
+
+        self.setLayout(vbox)
+
+    # ----------------------------------------------------------------------
+    def filterContract(self):
+        """显示过滤后的合约"""
+        content = str(self.lineFilter.text())
+        self.monitor.setFilterContent(content)
+        self.monitor.refresh()
+
+
+########################################################################
 class WorkingOrderMonitor(OrderMonitor):
     """活动委托监控"""
     STATUS_COMPLETED = [STATUS_ALLTRADED, STATUS_CANCELLED, STATUS_REJECTED]
@@ -1302,14 +1344,17 @@ class SettingEditor(QtWidgets.QWidget):
         self.currentFileName = str(self.comboFileName.currentText())
         filePath = jsonPathDict[self.currentFileName]
         self.labelPath.setText(filePath)
-        
-        with open(filePath) as f:
-            self.editSetting.clear()
-            
-            for line in f:
-                line = line.replace('\n', '')   # 移除换行符号
-                line = line.decode('UTF-8')
-                self.editSetting.append(line)
+
+        try:
+            with open(filePath, encoding='utf-8') as f:
+                self.editSetting.clear()
+
+                for line in f:
+                    line = line.replace('\n', '')   # 移除换行符号
+                    #line = line.decode('UTF-8')
+                    self.editSetting.append(line)
+        except Exception as e:
+            print(e)
     
     #----------------------------------------------------------------------
     def saveSetting(self):
@@ -1319,9 +1364,9 @@ class SettingEditor(QtWidgets.QWidget):
         
         filePath = jsonPathDict[self.currentFileName]
         
-        with open(filePath, 'w') as f:
+        with open(filePath, 'w',encoding='utf-8') as f:
             content = self.editSetting.toPlainText()
-            content = content.encode('UTF-8')
+            #content = content.encode('UTF-8')
             f.write(content)
         
     #----------------------------------------------------------------------
