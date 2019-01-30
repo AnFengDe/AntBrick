@@ -20,6 +20,8 @@ from vnpy.api.idcm import IdcmWebsocketApi
 from vnpy.trader.vtGateway import *
 from vnpy.trader.vtFunction import getJsonPath
 
+from threading import Thread
+
 REST_HOST = 'https://api.IDCM.cc:8323'
 WEBSOCKET_HOST = 'wss://real.idcm.cc:10330/websocket'
 EXCHANGE_IDCM = "IDCM"
@@ -256,6 +258,8 @@ class IdcmRestApi(RestClient):
         self.orderBufDict = {}
         self.tickDict = {}
 
+        self.queryAccountThread = None
+
     # ----------------------------------------------------------------------
     def sign(self, request):
         """IDCM的签名方案"""
@@ -288,8 +292,10 @@ class IdcmRestApi(RestClient):
 
         self.init(REST_HOST)
         self.start(sessionCount)
-        self.queryTicker()
-        self.queryAccount()
+        #self.queryTicker()
+        self.reqThread = Thread(target=self.queryAccount)
+        self.reqThread.start()
+        #self.queryAccount()
 
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
@@ -362,8 +368,10 @@ class IdcmRestApi(RestClient):
     # ----------------------------------------------------------------------
     def queryAccount(self):
         """"""
-        self.addRequest('POST', '/api/v1/getuserinfo', data="1",
-                        callback=self.onQueryAccount)
+        while 1:
+            self.addRequest('POST', '/api/v1/getuserinfo', data="1",
+                            callback=self.onQueryAccount)
+            time.sleep(5)  # 每隔5秒刷新账户信息
 
     def queryOrder(self):
         """"""
@@ -771,41 +779,6 @@ class WebsocketApi(IdcmWebsocketApi):
             self.sendReq(req)
 
     """
-    def oldsubscribe(self, subscribeReq):
-        """"""
-        # V3到V1的代码转换
-        currency, contractType = convertSymbol(subscribeReq.symbol)
-
-        # 订阅成交
-        channel1 = 'ok_sub_futureusd_%s_ticker_%s' % (currency, contractType)
-        self.callbackDict[channel1] = self.onTick
-        self.channelSymbolDict[channel1] = subscribeReq.symbol
-
-        req1 = {
-            'event': 'addChannel',
-            'channel': channel1
-        }
-        self.sendPacket(req1)
-
-        # 订阅深度
-        channel2 = 'ok_sub_futureusd_%s_depth_%s_5' % (currency, contractType)
-        self.callbackDict[channel2] = self.onDepth
-        self.channelSymbolDict[channel2] = subscribeReq.symbol
-
-        req2 = {
-            'event': 'addChannel',
-            'channel': channel2
-        }
-        self.sendPacket(req2)
-
-        # 创建Tick对象
-        tick = VtTickData()
-        tick.gatewayName = self.gatewayName
-        tick.symbol = subscribeReq.symbol
-        tick.exchange = 'OKEX'
-        tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
-        self.tickDict[tick.symbol] = tick
-
     def onLogin(self, d):
         """"""
         data = d['data']
