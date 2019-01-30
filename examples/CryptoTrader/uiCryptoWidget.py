@@ -479,7 +479,7 @@ class LogMonitor(BasicMonitor):
         
         self.signalError.connect(self.processErrorEvent)
         self.eventEngine.register(EVENT_ERROR, self.signalError.emit)
-        
+
         self.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
         self.setFixedHeight(200)
     
@@ -674,14 +674,28 @@ class DepthMonitor(QtWidgets.QTableWidget):
     #----------------------------------------------------------------------
     def initUi(self):
         """"""
-        labels = [u'价格',
+        horizonLabels = [u'价格',
                   u'数量',
                   u'总额']
-        
-        self.setColumnCount(len(labels))
-        self.setHorizontalHeaderLabels(labels)
-        self.setRowCount(11)
-        self.verticalHeader().setVisible(False)
+
+        verticalLabels = [
+                  u'卖五',
+                  u'卖四',
+                  u'卖三',
+                  u'卖二',
+                  u'卖一',
+                  u'当前',
+                    u'买一',
+                    u'买二',
+                    u'买三',
+                    u'买四',
+                    u'买五']
+
+        self.setColumnCount(len(horizonLabels))
+        self.setRowCount(len(verticalLabels))
+        self.setHorizontalHeaderLabels(horizonLabels)
+        self.setVerticalHeaderLabels(verticalLabels)
+        #self.verticalHeader().setVisible(False)
         self.setEditTriggers(self.NoEditTriggers)   
         self.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch) 
         self.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch) 
