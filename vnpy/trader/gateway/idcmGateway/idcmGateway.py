@@ -94,7 +94,7 @@ def getErrMsg(errcode):
 # output BTC-USDT
 def getSymbolFromChannel(channel):
     start = channel.find("spot_")
-    start += 5
+    start += len("spot_")
     end = channel.find("_", start)
     return channel[start:end]
 
@@ -443,8 +443,8 @@ class IdcmRestApi(RestClient):
                 self.gateway.onAccount(account)
 
             #self.queryOrder()
-            self.queryHistoryOrder()
-            self.gateway.writeLog(u'资金信息查询成功')
+            #self.queryHistoryOrder()
+            #self.gateway.writeLog(u'资金信息查询成功')
         else:
             try:
                 msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
@@ -572,13 +572,14 @@ class IdcmRestApi(RestClient):
             self.gateway.writeLog(msg)
 
             order.status = STATUS_REJECTED
-            #self.gateway.onOrder(order)  # TODO may cause bug
+            self.gateway.onOrder(order)  # TODO may cause bug
         else:
             orderID = data['data']
             strOrderID = str(orderID)
 
             self.localOrderDict[localID] = strOrderID
             self.orderDict[strOrderID] = order
+            self.gateway.onOrder(order)
 
             req = self.cancelReqDict.get(localID, None)
             if req:
@@ -763,7 +764,7 @@ class WebsocketApi(IdcmWebsocketApi):
 
         for symbol in self.symbols:
             # 订阅行情深度,支持5，10，20档
-            channel1 = "idcm_sub_spot_" + symbol + "_depth_5"
+            channel1 = "idcm_sub_spot_" + symbol + "_depth_20"
             req = {
                 'event': 'addChannel',
                 'channel': channel1
@@ -820,30 +821,65 @@ class WebsocketApi(IdcmWebsocketApi):
             bids = d['data']['bids']
             asks = d['data']['asks']
 
-            tick.bidPrice1 = bids[0]['Price']
+            for index in range(10):
+                para = "bidPrice" + str(10 - index)
+                setattr(tick, para, bids[index]['Price'])
+
+                para = "askPrice" + str(10 - index)
+                setattr(tick, para, asks[index]['Price'])
+
+                para = "bidVolume" + str(10 - index)
+                setattr(tick, para, bids[index]['Amount'])
+
+                para = "askVolume" + str(10 - index)
+                setattr(tick, para, asks[index]['Amount'])
+
+            """
+            tick.bidPrice1 = bids[00]['Price']
             tick.bidPrice2 = bids[1]['Price']
             tick.bidPrice3 = bids[2]['Price']
             tick.bidPrice4 = bids[3]['Price']
             tick.bidPrice5 = bids[4]['Price']
+            tick.bidPrice6 = bids[5]['Price']
+            tick.bidPrice7 = bids[6]['Price']
+            tick.bidPrice8 = bids[7]['Price']
+            tick.bidPrice9 = bids[8]['Price']
+            tick.bidPrice10 = bids[9]['Price']
+            
 
             tick.askPrice1 = asks[0]['Price']
             tick.askPrice2 = asks[1]['Price']
             tick.askPrice3 = asks[2]['Price']
             tick.askPrice4 = asks[3]['Price']
             tick.askPrice5 = asks[4]['Price']
+            tick.askPrice6 = asks[5]['Price']
+            tick.askPrice7 = asks[6]['Price']
+            tick.askPrice8 = asks[7]['Price']
+            tick.askPrice9 = asks[8]['Price']
+            tick.askPrice10 = asks[9]['Price']
 
             tick.bidVolume1 = bids[0]['Amount']
             tick.bidVolume2 = bids[1]['Amount']
             tick.bidVolume3 = bids[2]['Amount']
             tick.bidVolume4 = bids[3]['Amount']
             tick.bidVolume5 = bids[4]['Amount']
+            tick.bidVolume6 = bids[5]['Amount']
+            tick.bidVolume7 = bids[6]['Amount']
+            tick.bidVolume8 = bids[7]['Amount']
+            tick.bidVolume9 = bids[8]['Amount']
+            tick.bidVolume10 = bids[9]['Amount']
 
             tick.askVolume1 = asks[0]['Amount']
             tick.askVolume2 = asks[1]['Amount']
             tick.askVolume3 = asks[2]['Amount']
             tick.askVolume4 = asks[3]['Amount']
             tick.askVolume5 = asks[4]['Amount']
-
+            tick.askVolume6 = asks[5]['Amount']
+            tick.askVolume7 = asks[6]['Amount']
+            tick.askVolume8 = asks[7]['Amount']
+            tick.askVolume9 = asks[8]['Amount']
+            tick.askVolume10 = asks[9]['Amount']
+            """
             tick.datetime = datetime.fromtimestamp(d['timestamp'])
             tick.date = tick.datetime.strftime('%Y%m%d')
             tick.time = tick.datetime.strftime('%H:%M:%S')
