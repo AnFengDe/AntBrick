@@ -499,7 +499,6 @@ class LogMonitor(BasicMonitor):
         self.setItem(0, 2, cellLogContent)
 
 
-
 ########################################################################
 class TradeMonitor(BasicMonitor):
     """成交监控"""
@@ -679,17 +678,27 @@ class DepthMonitor(QtWidgets.QTableWidget):
                   u'总额']
 
         verticalLabels = [
-                  u'卖五',
-                  u'卖四',
-                  u'卖三',
-                  u'卖二',
-                  u'卖一',
-                  u'当前',
-                    u'买一',
-                    u'买二',
-                    u'买三',
-                    u'买四',
-                    u'买五']
+            u'卖十',
+            u'卖九',
+            u'卖八',
+            u'卖七',
+            u'卖六',
+              u'卖五',
+              u'卖四',
+              u'卖三',
+              u'卖二',
+              u'卖一',
+              u'当前',
+                u'买一',
+                u'买二',
+                u'买三',
+                u'买四',
+                u'买五',
+        u'买六',
+        u'买七',
+        u'买八',
+        u'买九',
+        u'买十']
 
         self.setColumnCount(len(horizonLabels))
         self.setRowCount(len(verticalLabels))
@@ -707,46 +716,85 @@ class DepthMonitor(QtWidgets.QTableWidget):
         askColor = 'green'
         bidColor = 'red'
         lastColor = 'orange'
-        
-        self.addCell('askPrice5', 0, 0, askColor)
-        self.addCell('askPrice4', 1, 0, askColor)
-        self.addCell('askPrice3', 2, 0, askColor)
-        self.addCell('askPrice2', 3, 0, askColor)
-        self.addCell('askPrice1', 4, 0, askColor)
-        self.addCell('lastPrice', 5, 0, lastColor)
-        self.addCell('bidPrice1', 6, 0, bidColor)
-        self.addCell('bidPrice2', 7, 0, bidColor)
-        self.addCell('bidPrice3', 8, 0, bidColor)
-        self.addCell('bidPrice4', 9, 0, bidColor)
-        self.addCell('bidPrice5', 10, 0, bidColor)
-        
-        self.addCell('askVolume5', 0, 1, askColor)
-        self.addCell('askVolume4', 1, 1, askColor)
-        self.addCell('askVolume3', 2, 1, askColor)
-        self.addCell('askVolume2', 3, 1, askColor)
-        self.addCell('askVolume1', 4, 1, askColor)
-        self.addCell('todayChange', 5, 1, lastColor)
-        self.addCell('bidVolume1', 6, 1, bidColor)
-        self.addCell('bidVolume2', 7, 1, bidColor)
-        self.addCell('bidVolume3', 8, 1, bidColor)
-        self.addCell('bidVolume4', 9, 1, bidColor)
-        self.addCell('bidVolume5', 10, 1, bidColor)
-        
-        self.addCell('askValue5', 0, 2, askColor)
-        self.addCell('askValue4', 1, 2, askColor)
-        self.addCell('askValue3', 2, 2, askColor)
-        self.addCell('askValue2', 3, 2, askColor)
-        self.addCell('askValue1', 4, 2, askColor)
-        self.addCell('bidValue1', 6, 2, bidColor)
-        self.addCell('bidValue2', 7, 2, bidColor)
-        self.addCell('bidValue3', 8, 2, bidColor)
-        self.addCell('bidValue4', 9, 2, bidColor)
-        self.addCell('bidValue5', 10, 2, bidColor)
-        
+
+        for index in range(10):
+            cellName = "askPrice"+str(10-index)
+            self.addCell(cellName, index, 0, askColor)
+
+            """
+            self.addCell('askPrice9', 1, 0, askColor)
+            self.addCell('askPrice8', 2, 0, askColor)
+            self.addCell('askPrice7', 3, 0, askColor)
+            self.addCell('askPrice6', 4, 0, askColor)
+            self.addCell('askPrice5', 5, 0, askColor)
+            self.addCell('askPrice4', 6, 0, askColor)
+            self.addCell('askPrice3', 7, 0, askColor)
+            self.addCell('askPrice2', 8, 0, askColor)
+            self.addCell('askPrice1', 9, 0, askColor)
+            """
+
+        self.addCell('lastPrice', 10, 0, lastColor)
+        self.addCell('bidPrice1', 11, 0, bidColor)
+        self.addCell('bidPrice2', 12, 0, bidColor)
+        self.addCell('bidPrice3', 13, 0, bidColor)
+        self.addCell('bidPrice4', 14, 0, bidColor)
+        self.addCell('bidPrice5', 15, 0, bidColor)
+        self.addCell('bidPrice6', 16, 0, bidColor)
+        self.addCell('bidPrice7', 17, 0, bidColor)
+        self.addCell('bidPrice8', 18, 0, bidColor)
+        self.addCell('bidPrice9', 19, 0, bidColor)
+        self.addCell('bidPrice10', 20, 0, bidColor)
+
+        self.addCell('askVolume10', 0, 1, askColor)
+        self.addCell('askVolume9', 1, 1, askColor)
+        self.addCell('askVolume8', 2, 1, askColor)
+        self.addCell('askVolume7', 3, 1, askColor)
+        self.addCell('askVolume6', 4, 1, askColor)
+        self.addCell('askVolume5', 5, 1, askColor)
+        self.addCell('askVolume4', 6, 1, askColor)
+        self.addCell('askVolume3', 7, 1, askColor)
+        self.addCell('askVolume2', 8, 1, askColor)
+        self.addCell('askVolume1', 9, 1, askColor)
+        self.addCell('todayChange', 10, 1, lastColor)
+        self.addCell('bidVolume1', 11, 1, bidColor)
+        self.addCell('bidVolume2', 12, 1, bidColor)
+        self.addCell('bidVolume3', 13, 1, bidColor)
+        self.addCell('bidVolume4', 14, 1, bidColor)
+        self.addCell('bidVolume5', 15, 1, bidColor)
+        self.addCell('bidVolume6', 16, 1, bidColor)
+        self.addCell('bidVolume7', 17, 1, bidColor)
+        self.addCell('bidVolume8', 18, 1, bidColor)
+        self.addCell('bidVolume9', 19, 1, bidColor)
+        self.addCell('bidVolume10', 20, 1, bidColor)
+
+        self.addCell('askValue10', 0, 2, askColor)
+        self.addCell('askValue9', 1, 2, askColor)
+        self.addCell('askValue8', 2, 2, askColor)
+        self.addCell('askValue7', 3, 2, askColor)
+        self.addCell('askValue6', 4, 2, askColor)
+        self.addCell('askValue5', 5, 2, askColor)
+        self.addCell('askValue4', 6, 2, askColor)
+        self.addCell('askValue3', 7, 2, askColor)
+        self.addCell('askValue2', 8, 2, askColor)
+        self.addCell('askValue1', 9, 2, askColor)
+        self.addCell('bidValue1', 10, 2, bidColor)
+        self.addCell('bidValue2', 11, 2, bidColor)
+        self.addCell('bidValue3', 12, 2, bidColor)
+        self.addCell('bidValue4', 13, 2, bidColor)
+        self.addCell('bidValue5', 14, 2, bidColor)
+        self.addCell('bidValue6', 15, 2, bidColor)
+        self.addCell('bidValue7', 16, 2, bidColor)
+        self.addCell('bidValue8', 17, 2, bidColor)
+        self.addCell('bidValue9', 18, 2, bidColor)
+        self.addCell('bidValue10', 19, 2, bidColor)
+        #self.setFixedHeight(600)
+        #self
+
     #----------------------------------------------------------------------
     def addCell(self, name, row, col, color, alignment=None):
         """新增单元格"""
         cell = QtWidgets.QTableWidgetItem()
+        #self.setFixedHeight(60)
         self.setItem(row, col, cell)
         self.cellDict[name] = cell
         
@@ -778,12 +826,31 @@ class DepthMonitor(QtWidgets.QTableWidget):
         valueDecimals = 2
         
         # bid
+        for index in range(10):
+            cellName = "bidPrice" + str(10 - index)
+            self.updateCell(cellName, getattr(tick,cellName), data=getattr(tick,cellName))
+
+            cellName = "bidVolume" + str(10 - index)
+            self.updateCell(cellName, getattr(tick, cellName))
+
+            cellName = "askPrice" + str(10 - index)
+            self.updateCell(cellName, getattr(tick, cellName), data=getattr(tick, cellName))
+
+            cellName = "askVolume" + str(10 - index)
+            self.updateCell(cellName, getattr(tick, cellName))
+
+        """
         self.updateCell('bidPrice1', tick.bidPrice1, data=tick.bidPrice1)
         self.updateCell('bidPrice2', tick.bidPrice2, data=tick.bidPrice2)
         self.updateCell('bidPrice3', tick.bidPrice3, data=tick.bidPrice3)
         self.updateCell('bidPrice4', tick.bidPrice4, data=tick.bidPrice4)
         self.updateCell('bidPrice5', tick.bidPrice5, data=tick.bidPrice5)
-        
+        self.updateCell('bidPrice6', tick.bidPrice1, data=tick.bidPrice6)
+        self.updateCell('bidPrice7', tick.bidPrice2, data=tick.bidPrice7)
+        self.updateCell('bidPrice8', tick.bidPrice3, data=tick.bidPrice8)
+        self.updateCell('bidPrice9', tick.bidPrice4, data=tick.bidPrice9)
+        self.updateCell('bidPrice10', tick.bidPrice5, data=tick.bidPrice10)
+
         self.updateCell('bidVolume1', tick.bidVolume1, data=tick.bidPrice1)
         self.updateCell('bidVolume2', tick.bidVolume2, data=tick.bidPrice2)
         self.updateCell('bidVolume3', tick.bidVolume3, data=tick.bidPrice3)
@@ -814,7 +881,8 @@ class DepthMonitor(QtWidgets.QTableWidget):
         self.updateCell('askValue3', tick.askPrice3*tick.askVolume3*self.contractSize, valueDecimals, data=tick.askPrice3)
         self.updateCell('askValue4', tick.askPrice4*tick.askVolume4*self.contractSize, valueDecimals, data=tick.askPrice4)
         self.updateCell('askValue5', tick.askPrice5*tick.askVolume5*self.contractSize, valueDecimals, data=tick.askPrice5)
-        
+        """
+
         # today
         self.updateCell('lastPrice', tick.lastPrice)
         
@@ -894,7 +962,7 @@ class TradingWidget(QtWidgets.QFrame):
     def initUi(self):
         """初始化界面"""
         self.setWindowTitle(vtText.TRADING)
-        self.setFixedHeight(400)
+        self.setFixedHeight(500)
         self.setFixedWidth(600)
         self.setFrameShape(self.Box)    # 设置边框
         self.setLineWidth(1)           
@@ -971,15 +1039,14 @@ class TradingWidget(QtWidgets.QFrame):
         vbox.addLayout(gridButton)
         
         hbox = QtWidgets.QHBoxLayout()
-        hbox.addLayout(vbox)
         hbox.addWidget(self.depthMonitor)
-        
+        hbox.addLayout(vbox)  # 下单部分在右上角
+
         self.setLayout(hbox)
 
         # 关联更新
         self.comboGateway.currentIndexChanged.connect(self.updateSymbolForGateway)  # 根据交易所变化选择交易对
         self.comboSymbol.currentTextChanged.connect(self.updateVtSymbol)  # 写入当前交易对
-        #self.lineSymbol.returnPressed.connect(self.updateSymbol)
         self.depthMonitor.itemDoubleClicked.connect(self.updatePrice)
 
     def updateSymbolForGateway(self):
