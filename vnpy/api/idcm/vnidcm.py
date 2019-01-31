@@ -95,7 +95,7 @@ class IdcmWebsocketApi(object):
 
 
 
-
+"""
 if __name__ == '__main__':
     from datetime import datetime
     from time import sleep
@@ -148,5 +148,5 @@ if __name__ == '__main__':
     #ws.sendReq(req)
 
     input()
-    
+"""
     
