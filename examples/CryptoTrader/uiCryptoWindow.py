@@ -37,27 +37,28 @@ class MainWindow(QtWidgets.QMainWindow):
     #----------------------------------------------------------------------
     def initUi(self):
         """初始化界面"""
-        self.setWindowTitle('VN Crypto')
+        self.setWindowTitle('FCS.ONE')
         self.initCentral()
         self.initMenu()
         self.initStatusBar()
         
     #----------------------------------------------------------------------
     def initCentral(self):
-        """初始化中心区域"""
-        widgetTradingW, dockTradingW = self.createDock(TradingWidget, vtText.TRADING, QtCore.Qt.RightDockWidgetArea) 
+        #右上角为交易区
+        widgetTradingW, dockTradingW = self.createDock(TradingWidget, vtText.TRADING, QtCore.Qt.RightDockWidgetArea)
+
         widgetMarketM, dockMarketM = self.createDock(MarketMonitor, vtText.MARKET_DATA, QtCore.Qt.LeftDockWidgetArea)
         
-        widgetOrderM, dockOrderM = self.createDock(OrderMonitor, vtText.ORDER, QtCore.Qt.LeftDockWidgetArea)
-        widgetWorkingOrderM, dockWorkingOrderM = self.createDock(WorkingOrderMonitor, vtText.WORKING_ORDER, QtCore.Qt.LeftDockWidgetArea)
+        widgetOrderM, dockOrderM = self.createDock(OrderMonitor, vtText.ORDER, QtCore.Qt.LeftDockWidgetArea)  # 委托
+        widgetWorkingOrderM, dockWorkingOrderM = self.createDock(WorkingOrderMonitor, vtText.WORKING_ORDER, QtCore.Qt.LeftDockWidgetArea)  # 可撤
         widgetTradeM, dockTradeM = self.createDock(TradeMonitor, vtText.TRADE, QtCore.Qt.LeftDockWidgetArea)
         
         widgetAccountM, dockAccountM = self.createDock(AccountMonitor, vtText.ACCOUNT, QtCore.Qt.RightDockWidgetArea)
-        widgetPositionM, dockPositionM = self.createDock(PositionMonitor, vtText.POSITION, QtCore.Qt.RightDockWidgetArea)        
+        #widgetPositionM, dockPositionM = self.createDock(PositionMonitor, vtText.POSITION, QtCore.Qt.RightDockWidgetArea)
         widgetLogM, dockLogM = self.createDock(LogMonitor, vtText.LOG, QtCore.Qt.RightDockWidgetArea)
         
         self.tabifyDockWidget(dockOrderM, dockWorkingOrderM)
-        self.tabifyDockWidget(dockPositionM, dockAccountM)
+        self.tabifyDockWidget(dockAccountM, dockLogM)
         
         # 保存默认设置
         self.saveWindowSettings('default')
@@ -309,17 +310,14 @@ class AboutWidget(QtWidgets.QDialog):
     #----------------------------------------------------------------------
     def initUi(self):
         """"""
-        self.setWindowTitle(vtText.ABOUT + 'VN Crypto')
+        self.setWindowTitle(vtText.ABOUT + 'FCS.ONE')
 
         text = u"""
-            Developed by Traders, for Traders.
+            Developed by FCS.
 
             License：MIT
             
-            Website：www.vnpy.org
-
-            Github：www.github.com/vnpy/vnpy
-            
+            Website：FCS.ONE
             """
 
         label = QtWidgets.QLabel()
@@ -330,4 +328,3 @@ class AboutWidget(QtWidgets.QDialog):
         vbox.addWidget(label)
 
         self.setLayout(vbox)
-    
