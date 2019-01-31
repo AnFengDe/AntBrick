@@ -52,30 +52,19 @@ class VtTickData(VtBaseData):
         self.upperLimit = EMPTY_FLOAT           # 涨停价
         self.lowerLimit = EMPTY_FLOAT           # 跌停价
         
-        # 五档行情
-        self.bidPrice1 = EMPTY_FLOAT
-        self.bidPrice2 = EMPTY_FLOAT
-        self.bidPrice3 = EMPTY_FLOAT
-        self.bidPrice4 = EMPTY_FLOAT
-        self.bidPrice5 = EMPTY_FLOAT
-        
-        self.askPrice1 = EMPTY_FLOAT
-        self.askPrice2 = EMPTY_FLOAT
-        self.askPrice3 = EMPTY_FLOAT
-        self.askPrice4 = EMPTY_FLOAT
-        self.askPrice5 = EMPTY_FLOAT        
-        
-        self.bidVolume1 = EMPTY_INT
-        self.bidVolume2 = EMPTY_INT
-        self.bidVolume3 = EMPTY_INT
-        self.bidVolume4 = EMPTY_INT
-        self.bidVolume5 = EMPTY_INT
-        
-        self.askVolume1 = EMPTY_INT
-        self.askVolume2 = EMPTY_INT
-        self.askVolume3 = EMPTY_INT
-        self.askVolume4 = EMPTY_INT
-        self.askVolume5 = EMPTY_INT
+        # 十档行情
+        for index in range(10):
+            para= "bidPrice" + str(index+1)
+            setattr(self, para, EMPTY_FLOAT)
+
+            para= "askPrice" + str(index+1)
+            setattr(self, para, EMPTY_FLOAT)
+
+            para= "bidVolume" + str(index+1)
+            setattr(self, para, EMPTY_FLOAT)
+
+            para= "askVolume" + str(index+1)
+            setattr(self, para, EMPTY_FLOAT)
 
     #----------------------------------------------------------------------
     @staticmethod
