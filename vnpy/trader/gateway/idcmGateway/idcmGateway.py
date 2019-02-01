@@ -368,7 +368,7 @@ class IdcmRestApi(RestClient):
     # ----------------------------------------------------------------------
     def queryAccount(self):
         """"""
-        while 1:
+        while self._active:
             self.addRequest('POST', '/api/v1/getuserinfo', data="1",
                             callback=self.onQueryAccount)
             time.sleep(5)  # 每隔5秒刷新账户信息
