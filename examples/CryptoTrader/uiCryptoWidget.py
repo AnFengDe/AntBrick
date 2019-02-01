@@ -667,7 +667,8 @@ class DepthMonitor(QtWidgets.QTableWidget):
         
         self.contractSize = 1   # 合约乘数
         self.cellDict = {}
-        
+
+        self.depth=10
         self.initUi()
     
     #----------------------------------------------------------------------
@@ -675,7 +676,7 @@ class DepthMonitor(QtWidgets.QTableWidget):
         """"""
         horizonLabels = [u'价格',
                   u'数量',
-                  u'总额']
+                  u'累计']
 
         verticalLabels = [
             u'卖十',
@@ -699,15 +700,16 @@ class DepthMonitor(QtWidgets.QTableWidget):
         u'买八',
         u'买九',
         u'买十']
-
+        #self.setRowHeight(0,5)
+        #self.setRowHeight(1,145)
         self.setColumnCount(len(horizonLabels))
         self.setRowCount(len(verticalLabels))
         self.setHorizontalHeaderLabels(horizonLabels)
         self.setVerticalHeaderLabels(verticalLabels)
         #self.verticalHeader().setVisible(False)
         self.setEditTriggers(self.NoEditTriggers)   
-        self.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch) 
-        self.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch) 
+        self.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        self.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         
         left = QtCore.Qt.AlignLeft
         right = QtCore.Qt.AlignRight
@@ -716,24 +718,45 @@ class DepthMonitor(QtWidgets.QTableWidget):
         askColor = 'green'
         bidColor = 'red'
         lastColor = 'orange'
+        depth = self.depth
 
-        for index in range(10):
-            cellName = "askPrice"+str(10-index)
-            self.addCell(cellName, index, 0, askColor)
+        # 价格
+        col = 0
+        for index in range(depth):
+            cellName = "askPrice" + str(depth-index)
+            self.addCell(cellName, index, col, askColor)
 
-            """
-            self.addCell('askPrice9', 1, 0, askColor)
-            self.addCell('askPrice8', 2, 0, askColor)
-            self.addCell('askPrice7', 3, 0, askColor)
-            self.addCell('askPrice6', 4, 0, askColor)
-            self.addCell('askPrice5', 5, 0, askColor)
-            self.addCell('askPrice4', 6, 0, askColor)
-            self.addCell('askPrice3', 7, 0, askColor)
-            self.addCell('askPrice2', 8, 0, askColor)
-            self.addCell('askPrice1', 9, 0, askColor)
-            """
+        self.addCell('lastPrice', depth, col, lastColor)
 
-        self.addCell('lastPrice', 10, 0, lastColor)
+        for index in range(depth):
+            cellName = "bidPrice"+str(index+1)
+            self.addCell(cellName, index+depth+1, col, askColor)
+
+        # 数量
+        col = 1
+        for index in range(depth):
+            cellName = "askVolume"+str(depth-index)
+            self.addCell(cellName, index, col, askColor)
+
+        self.addCell('todayChange', depth, col, lastColor)
+
+        for index in range(depth):
+            cellName = "bidVolume"+str(index+1)
+            self.addCell(cellName, index+depth+1, col, bidColor)
+
+        # 累计
+        col = 2
+        for index in range(depth):
+            cellName = "askVolumeSum"+str(depth-index)
+            self.addCell(cellName, index, col, askColor)
+
+        self.addCell('blank', depth, col, lastColor)
+
+        for index in range(depth):
+            cellName = "bidVolumeSum"+str(index+1)
+            self.addCell(cellName, index+depth+1, col, bidColor)
+
+        """        
         self.addCell('bidPrice1', 11, 0, bidColor)
         self.addCell('bidPrice2', 12, 0, bidColor)
         self.addCell('bidPrice3', 13, 0, bidColor)
@@ -744,7 +767,6 @@ class DepthMonitor(QtWidgets.QTableWidget):
         self.addCell('bidPrice8', 18, 0, bidColor)
         self.addCell('bidPrice9', 19, 0, bidColor)
         self.addCell('bidPrice10', 20, 0, bidColor)
-
         self.addCell('askVolume10', 0, 1, askColor)
         self.addCell('askVolume9', 1, 1, askColor)
         self.addCell('askVolume8', 2, 1, askColor)
@@ -787,6 +809,7 @@ class DepthMonitor(QtWidgets.QTableWidget):
         self.addCell('bidValue8', 17, 2, bidColor)
         self.addCell('bidValue9', 18, 2, bidColor)
         self.addCell('bidValue10', 19, 2, bidColor)
+        """
         #self.setFixedHeight(600)
         #self
 
@@ -824,20 +847,33 @@ class DepthMonitor(QtWidgets.QTableWidget):
     def updateTick(self, tick):
         """更新Tick"""
         valueDecimals = 2
-        
-        # bid
-        for index in range(10):
-            cellName = "bidPrice" + str(10 - index)
-            self.updateCell(cellName, getattr(tick,cellName), data=getattr(tick,cellName))
+        depth = self.depth
 
-            cellName = "bidVolume" + str(10 - index)
-            self.updateCell(cellName, getattr(tick, cellName))
+        bidVolumeSum = 0
+        askVolumeSum = 0
 
-            cellName = "askPrice" + str(10 - index)
+        for index in range(depth):
+            cellName = "bidPrice" + str(index+1)
             self.updateCell(cellName, getattr(tick, cellName), data=getattr(tick, cellName))
 
-            cellName = "askVolume" + str(10 - index)
+            cellName = "bidVolume" + str(index+1)
             self.updateCell(cellName, getattr(tick, cellName))
+
+            cellName = "askPrice" + str(index+1)
+            self.updateCell(cellName, getattr(tick, cellName), data=getattr(tick, cellName))
+
+            cellName = "askVolume" + str(index+1)
+            self.updateCell(cellName, getattr(tick, cellName))
+
+            cellName = "bidVolumeSum" + str(index+1)
+            tick_cellName = "bidVolume" + str(index+1)
+            bidVolumeSum += getattr(tick, tick_cellName)
+            self.updateCell(cellName, bidVolumeSum)
+
+            cellName = "askVolumeSum" + str(index+1)
+            tick_cellName = "askVolume" + str(index+1)
+            askVolumeSum += getattr(tick, tick_cellName)
+            self.updateCell(cellName, askVolumeSum)
 
         """
         self.updateCell('bidPrice1', tick.bidPrice1, data=tick.bidPrice1)
@@ -1099,7 +1135,10 @@ class TradingWidget(QtWidgets.QFrame):
         tick = event.dict_['data']
         if tick.vtSymbol != self.vtSymbol:
             return
-        self.depthMonitor.updateTick(tick)
+        try:
+            self.depthMonitor.updateTick(tick)
+        except Exception as e:
+            print(e)
 
     #----------------------------------------------------------------------
     def registerEvent(self):
@@ -1205,7 +1244,7 @@ class ContractMonitor(BasicMonitor):
         """初始化界面"""
         self.setMinimumSize(800, 800)
         self.setFont(BASIC_FONT)
-        self.setResizeMode(QtWidgets.QHeaderView.Stretch)
+        #self.setResizeMode(QtWidgets.QHeaderView.Stretch) 根据显示的内容自动调整单元格的大小
         self.initTable()
         self.addMenuAction()
     
