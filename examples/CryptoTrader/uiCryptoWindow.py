@@ -44,19 +44,20 @@ class MainWindow(QtWidgets.QMainWindow):
         
     #----------------------------------------------------------------------
     def initCentral(self):
-        #右上角为交易区
+        # 右上角为交易区，包括10档行情显示，成交回报，下单
         widgetTradingW, dockTradingW = self.createDock(TradingWidget, vtText.TRADING, QtCore.Qt.RightDockWidgetArea)
 
-        widgetMarketM, dockMarketM = self.createDock(MarketMonitor, vtText.MARKET_DATA, QtCore.Qt.LeftDockWidgetArea)
-        
-        widgetOrderM, dockOrderM = self.createDock(OrderMonitor, vtText.ORDER, QtCore.Qt.LeftDockWidgetArea)  # 委托
-        widgetWorkingOrderM, dockWorkingOrderM = self.createDock(WorkingOrderMonitor, vtText.WORKING_ORDER, QtCore.Qt.LeftDockWidgetArea)  # 可撤
-        widgetTradeM, dockTradeM = self.createDock(TradeMonitor, vtText.TRADE, QtCore.Qt.LeftDockWidgetArea)
-        
+        # 账户和日志信息
         widgetAccountM, dockAccountM = self.createDock(AccountMonitor, vtText.ACCOUNT, QtCore.Qt.RightDockWidgetArea)
         #widgetPositionM, dockPositionM = self.createDock(PositionMonitor, vtText.POSITION, QtCore.Qt.RightDockWidgetArea)
         widgetLogM, dockLogM = self.createDock(LogMonitor, vtText.LOG, QtCore.Qt.RightDockWidgetArea)
-        
+
+        # 左侧为多币种行情，委托列表，成交列表
+        widgetMarketM, dockMarketM = self.createDock(MarketMonitor, vtText.MARKET_DATA, QtCore.Qt.LeftDockWidgetArea)
+        widgetOrderM, dockOrderM = self.createDock(OrderMonitor, vtText.ORDER, QtCore.Qt.LeftDockWidgetArea)  # 委托
+        widgetWorkingOrderM, dockWorkingOrderM = self.createDock(WorkingOrderMonitor, vtText.WORKING_ORDER, QtCore.Qt.LeftDockWidgetArea)  # 可撤
+        widgetTradeM, dockTradeM = self.createDock(TradeMonitor, vtText.TRADE, QtCore.Qt.LeftDockWidgetArea)
+
         self.tabifyDockWidget(dockOrderM, dockWorkingOrderM)
         self.tabifyDockWidget(dockAccountM, dockLogM)
         
