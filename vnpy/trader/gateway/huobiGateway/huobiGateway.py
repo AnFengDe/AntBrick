@@ -98,12 +98,13 @@ class HuobiGateway(VtGateway):
         self.orderLocalDict = {}
 
         self.restApi = HuobiRestApi(self)                   
-        self.tradeWsApi = HuobiTradeWebsocketApi(self)      
+        #self.tradeWsApi = HuobiTradeWebsocketApi(self)
         self.marketWsApi = HuobiMarketWebsocketApi(self)    
 
         self.qryEnabled = False         # 是否要启动循环查询
 
-        self.fileName = self.gatewayName + '_connect.json'
+        #self.fileName = self.gatewayName + '_connect.json'
+        self.fileName = 'GatewayConfig/' + self.gatewayName + '_connect.json'
         self.filePath = getJsonPath(self.fileName, __file__)
 
     #----------------------------------------------------------------------
@@ -133,7 +134,7 @@ class HuobiGateway(VtGateway):
 
         # 创建行情和交易接口对象
         self.restApi.connect(symbols, accessKey, secretKey)
-        self.tradeWsApi.connect(symbols, accessKey, secretKey)
+        #self.tradeWsApi.connect(symbols, accessKey, secretKey)
         self.marketWsApi.connect(symbols, accessKey, secretKey)
 
         # 初始化并启动查询
