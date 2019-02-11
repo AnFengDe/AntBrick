@@ -1017,10 +1017,8 @@ class TradingWidget(QtWidgets.QFrame):
 
     def load_symbols(self):
         """从硬盘读取交易对对象"""
-        #self.gatewayList
         for gateway in self.gatewayList:
             symbols_filename = 'GatewayConfig/' + gateway + '_connect.json'
-            #symbols_filepath = os.getcwd() + '\GatewayConfig' + '/' + symbols_filename
             symbols_filepath = getJsonPath(symbols_filename, __file__)
             try:
                 with open(symbols_filepath, "r") as f:
@@ -1045,7 +1043,7 @@ class TradingWidget(QtWidgets.QFrame):
         self.setFrameShape(self.Box)    # 设置边框
         self.setLineWidth(1)           
 
-        # 左边部分
+        # 右边委托区域
         labelGateway = QtWidgets.QLabel(vtText.GATEWAY)
         labelOrderType = QtWidgets.QLabel(vtText.ORDER_TYPE)
         labelSymbol = QtWidgets.QLabel(u'交易对')
@@ -1085,7 +1083,7 @@ class TradingWidget(QtWidgets.QFrame):
         gridLeft.addWidget(self.linePrice, 3, 1)
         gridLeft.addWidget(self.lineVolume, 4, 1)
         
-        # 左边部分
+        # 左边部分，10档行情和成交回报
         self.depthMonitor = DepthMonitor(self.mainEngine, self.eventEngine)
         self.dealsMonitor = DealsMonitor(self.mainEngine, self.eventEngine)
 
