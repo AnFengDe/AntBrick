@@ -1,8 +1,6 @@
 # encoding: UTF-8
 
 from __future__ import print_function
-import hashlib
-import hmac
 import json
 import ssl
 import traceback
@@ -10,7 +8,6 @@ import traceback
 from threading import Thread
 
 import websocket
-from six.moves import input
 
 
 WEBSOCKET_HOST = 'wss://real.IDCM.cc:10030/websocket'
