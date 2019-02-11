@@ -118,8 +118,9 @@ class IdcmGateway(VtGateway):
         self.restApi = IdcmRestApi(self)
         self.wsApi = WebsocketApi(self)
 
-        self.fileName = self.gatewayName + '_connect.json'
+        self.fileName = 'GatewayConfig/' + self.gatewayName + '_connect.json'
         self.filePath = getJsonPath(self.fileName, __file__)
+        #symbols_filepath = os.getcwd() + '\GatewayConfig' + '/' + self.fileName
 
     def connect(self):
         """连接"""
@@ -653,22 +654,6 @@ class WebsocketApi(IdcmWebsocketApi):
         self.symbols = symbols
 
         self.start()
-        """
-        channels = [
-            'lh_sub_spot_eth_btc_depth_20',
-            'lh_sub_spot_eth_btc_trades',
-            'lh_sub_spot_eth_btc_ticker'
-        ]
-
-        signature = self.sign(self.apiKey, self.secretKey)
-        for channel in channels:
-            req = {
-                'event': 'addChannel',
-                'channel': channel
-            }
-            self.sendReq(req)
-        """
-
         #for symbol in symbols:
         #    self.subscribeMarketData(symbol)
 
@@ -700,6 +685,8 @@ class WebsocketApi(IdcmWebsocketApi):
                 self.onDepth(data)
             elif 'ticker' in data['channel']:
                 self.onTick(data)
+            elif 'deals' in data['channel']:
+               self.onDeals(data)
 
     # ----------------------------------------------------------------------
     def onDisconnected(self):
@@ -779,23 +766,13 @@ class WebsocketApi(IdcmWebsocketApi):
             }
             self.sendReq(req)
 
-    """
-    def onLogin(self, d):
-        """"""
-        data = d['data']
-        print("onLogin")
-        if not data['result']:
-            return
-
-        # 订阅交易相关推送
-        self.sendPacket({'event': 'addChannel', 'channel': 'ok_sub_futureusd_trades'})
-        self.sendPacket({'event': 'addChannel', 'channel': 'ok_sub_futureusd_userinfo'})
-        self.sendPacket({'event': 'addChannel', 'channel': 'ok_sub_futureusd_positions'})
-
-        self.callbackDict['ok_sub_futureusd_trades'] = self.onTrade
-        self.callbackDict['ok_sub_futureusd_userinfo'] = self.onAccount
-        self.callbackDict['ok_sub_futureusd_positions'] = self.onPosition
-    """
+            # 订阅成交记录
+            channel1 = "idcm_sub_spot_" + symbol + "_deals"
+            req = {
+                'event': 'addChannel',
+                'channel': channel1
+            }
+            self.sendReq(req)
 
     # ----------------------------------------------------------------------
     def onTick(self, d):
@@ -809,8 +786,25 @@ class WebsocketApi(IdcmWebsocketApi):
         tick.lowPrice = float(data['low'])
         tick.volume = float(data['vol'])
 
-        tick = copy(tick)
+        #tick = copy(tick)
         self.gateway.onTick(tick)
+
+    def onDeals(self, d):
+        """"""
+        symbol = getSymbolFromChannel(d['channel'])
+        deal = self.tickDict[symbol]
+        data = d['data'][0]
+
+        #deal.price = float(data['price'])
+        #deal.amount = float(data['amount'])
+        deal.lastPrice = float(data['price'])
+        deal.volume = float(data['amount'])
+        deal.type = data['type']
+
+        deal.datetime = datetime.fromtimestamp(data['timestamp'])
+        deal.time = deal.datetime.strftime('%H:%M:%S')
+        #tick = copy(tick)
+        self.gateway.onTick(deal)
 
     # ----------------------------------------------------------------------
     def onDepth(self, d):
@@ -821,65 +815,20 @@ class WebsocketApi(IdcmWebsocketApi):
             bids = d['data']['bids']
             asks = d['data']['asks']
 
-            for index in range(10):
-                para = "bidPrice" + str(10 - index)
+            depth = 20
+            for index in range(depth):
+                para = "bidPrice" + str(depth - index)
                 setattr(tick, para, bids[index]['Price'])
 
-                para = "askPrice" + str(10 - index)
+                para = "askPrice" + str(depth - index)
                 setattr(tick, para, asks[index]['Price'])
 
-                para = "bidVolume" + str(10 - index)
+                para = "bidVolume" + str(depth - index)
                 setattr(tick, para, bids[index]['Amount'])
 
-                para = "askVolume" + str(10 - index)
+                para = "askVolume" + str(depth - index)
                 setattr(tick, para, asks[index]['Amount'])
 
-            """
-            tick.bidPrice1 = bids[00]['Price']
-            tick.bidPrice2 = bids[1]['Price']
-            tick.bidPrice3 = bids[2]['Price']
-            tick.bidPrice4 = bids[3]['Price']
-            tick.bidPrice5 = bids[4]['Price']
-            tick.bidPrice6 = bids[5]['Price']
-            tick.bidPrice7 = bids[6]['Price']
-            tick.bidPrice8 = bids[7]['Price']
-            tick.bidPrice9 = bids[8]['Price']
-            tick.bidPrice10 = bids[9]['Price']
-            
-
-            tick.askPrice1 = asks[0]['Price']
-            tick.askPrice2 = asks[1]['Price']
-            tick.askPrice3 = asks[2]['Price']
-            tick.askPrice4 = asks[3]['Price']
-            tick.askPrice5 = asks[4]['Price']
-            tick.askPrice6 = asks[5]['Price']
-            tick.askPrice7 = asks[6]['Price']
-            tick.askPrice8 = asks[7]['Price']
-            tick.askPrice9 = asks[8]['Price']
-            tick.askPrice10 = asks[9]['Price']
-
-            tick.bidVolume1 = bids[0]['Amount']
-            tick.bidVolume2 = bids[1]['Amount']
-            tick.bidVolume3 = bids[2]['Amount']
-            tick.bidVolume4 = bids[3]['Amount']
-            tick.bidVolume5 = bids[4]['Amount']
-            tick.bidVolume6 = bids[5]['Amount']
-            tick.bidVolume7 = bids[6]['Amount']
-            tick.bidVolume8 = bids[7]['Amount']
-            tick.bidVolume9 = bids[8]['Amount']
-            tick.bidVolume10 = bids[9]['Amount']
-
-            tick.askVolume1 = asks[0]['Amount']
-            tick.askVolume2 = asks[1]['Amount']
-            tick.askVolume3 = asks[2]['Amount']
-            tick.askVolume4 = asks[3]['Amount']
-            tick.askVolume5 = asks[4]['Amount']
-            tick.askVolume6 = asks[5]['Amount']
-            tick.askVolume7 = asks[6]['Amount']
-            tick.askVolume8 = asks[7]['Amount']
-            tick.askVolume9 = asks[8]['Amount']
-            tick.askVolume10 = asks[9]['Amount']
-            """
             tick.datetime = datetime.fromtimestamp(d['timestamp'])
             tick.date = tick.datetime.strftime('%Y%m%d')
             tick.time = tick.datetime.strftime('%H:%M:%S')
@@ -889,7 +838,7 @@ class WebsocketApi(IdcmWebsocketApi):
         except Exception as e:
             print(e)
 
-"""
+    """
     # ----------------------------------------------------------------------
     def onTrade(self, d):
         data = d['data']
