@@ -751,26 +751,26 @@ class WebsocketApi(IdcmWebsocketApi):
 
         for symbol in self.symbols:
             # 订阅行情深度,支持5，10，20档
-            channel1 = "idcm_sub_spot_" + symbol + "_depth_20"
+            channel = "idcm_sub_spot_" + symbol + "_depth_20"
             req = {
                 'event': 'addChannel',
-                'channel': channel1
+                'channel': channel
             }
             self.sendReq(req)
 
             # 订阅行情数据
-            channel1 = "idcm_sub_spot_" + symbol + "_ticker"
+            channel = "idcm_sub_spot_" + symbol + "_ticker"
             req = {
                 'event': 'addChannel',
-                'channel': channel1
+                'channel': channel
             }
             self.sendReq(req)
 
             # 订阅成交记录
-            channel1 = "idcm_sub_spot_" + symbol + "_deals"
+            channel = "idcm_sub_spot_" + symbol + "_deals"
             req = {
                 'event': 'addChannel',
-                'channel': channel1
+                'channel': channel
             }
             self.sendReq(req)
 
