@@ -52,7 +52,7 @@ class CcxtGateway(VtGateway):
 
         self.qryEnabled = False         # 是否要启动循环查询
 
-        self.fileName = self.gatewayName + '_connect.json'
+        self.fileName = 'GatewayConfig/' + self.gatewayName + '_connect.json'
         self.filePath = getJsonPath(self.fileName, __file__)
 
     #----------------------------------------------------------------------
