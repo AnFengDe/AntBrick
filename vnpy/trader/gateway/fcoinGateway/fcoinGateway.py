@@ -51,7 +51,7 @@ class FcoinGateway(VtGateway):
 
         self.qryEnabled = False         # 是否要启动循环查询
 
-        self.fileName = self.gatewayName + '_connect.json'
+        self.fileName = 'GatewayConfig/' + self.gatewayName + '_connect.json'
         self.filePath = getJsonPath(self.fileName, __file__)
 
     #----------------------------------------------------------------------
@@ -81,11 +81,11 @@ class FcoinGateway(VtGateway):
             return
 
         # 创建行情和交易接口对象
-        self.restApi.connect(apiKey, apiSecret, symbols)
+        #self.restApi.connect(apiKey, apiSecret, symbols)
         self.wsApi.connect(apiKey, apiSecret, symbols)
 
         # 初始化并启动查询
-        self.initQuery()
+        #self.initQuery()
 
     #----------------------------------------------------------------------
     def subscribe(self, subscribeReq):
@@ -487,7 +487,7 @@ class WebsocketApi(FcoinWebsocketApi):
             'args': l,
             'id': '1'
         }
-        print('subscribe req is', req)
+        #print('subscribe req is', req)
         self.sendReq(req)
 
     
@@ -517,6 +517,7 @@ class WebsocketApi(FcoinWebsocketApi):
     
     #----------------------------------------------------------------------
     def onTick(self, d):
+        #return
         """"""
         symbol = d['type'].split('.')[-1]
         tick = self.tickDict[symbol]
