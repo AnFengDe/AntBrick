@@ -528,7 +528,35 @@ class TradeMonitor(BasicMonitor):
         self.registerEvent()
 
         self.setFixedHeight(200)
-        
+
+
+class DealsMonitor(BasicMonitor):
+    """订阅的成交记录"""
+    # ----------------------------------------------------------------------
+    def __init__(self, mainEngine, eventEngine, parent=None):
+        """Constructor"""
+        super(DealsMonitor, self).__init__(mainEngine, eventEngine, parent)
+
+        self.mainEngine = mainEngine
+
+        d = OrderedDict()
+        #d['gatewayName'] = {'chinese': vtText.GATEWAY, 'cellType': BasicCell}
+        d['lastPrice'] = {'chinese': vtText.PRICE, 'cellType': BasicCell}
+        d['volume'] = {'chinese': vtText.TRADED_VOLUME, 'cellType': BasicCell}
+        d['time'] = {'chinese': vtText.ORDER_TIME, 'cellType': BasicCell}
+        self.setHeaderDict(d)
+
+        self.setDataKey('time')
+        self.setEventType(EVENT_TICK)
+        self.setFont(BASIC_FONT)
+        #self.setSaveData(True)
+        #self.setSorting(True)
+        self.setResizeMode(QtWidgets.QHeaderView.Stretch)
+
+        self.initTable()
+        self.registerEvent()
+        #self.connectSignal()
+
 
 ########################################################################
 class OrderMonitor(BasicMonitor):
@@ -668,7 +696,7 @@ class DepthMonitor(QtWidgets.QTableWidget):
         self.contractSize = 1   # 合约乘数
         self.cellDict = {}
 
-        self.depth=10
+        self.depth = 10
         self.initUi()
     
     #----------------------------------------------------------------------
@@ -678,7 +706,14 @@ class DepthMonitor(QtWidgets.QTableWidget):
                   u'数量',
                   u'累计']
 
-        verticalLabels = [
+        verticalLabels = []
+        for index in range(self.depth):
+            verticalLabels.append(u'卖'+str(self.depth - index))
+        verticalLabels.append(u'当前')
+        for index in range(self.depth):
+            verticalLabels.append(u'买' + str(index+1))
+
+            """
             u'卖十',
             u'卖九',
             u'卖八',
@@ -700,8 +735,7 @@ class DepthMonitor(QtWidgets.QTableWidget):
         u'买八',
         u'买九',
         u'买十']
-        #self.setRowHeight(0,5)
-        #self.setRowHeight(1,145)
+        """
         self.setColumnCount(len(horizonLabels))
         self.setRowCount(len(verticalLabels))
         self.setHorizontalHeaderLabels(horizonLabels)
@@ -715,9 +749,11 @@ class DepthMonitor(QtWidgets.QTableWidget):
         right = QtCore.Qt.AlignRight
         
         # 单元格
-        askColor = 'green'
-        bidColor = 'red'
+        askColor = 'red'
+        bidColor = 'green'
         lastColor = 'orange'
+        normalColor = 'white'
+        sumColor = 'gray'
         depth = self.depth
 
         # 价格
@@ -730,31 +766,31 @@ class DepthMonitor(QtWidgets.QTableWidget):
 
         for index in range(depth):
             cellName = "bidPrice"+str(index+1)
-            self.addCell(cellName, index+depth+1, col, askColor)
+            self.addCell(cellName, index+depth+1, col, bidColor)
 
         # 数量
         col = 1
         for index in range(depth):
             cellName = "askVolume"+str(depth-index)
-            self.addCell(cellName, index, col, askColor)
+            self.addCell(cellName, index, col, normalColor)
 
         self.addCell('todayChange', depth, col, lastColor)
 
         for index in range(depth):
             cellName = "bidVolume"+str(index+1)
-            self.addCell(cellName, index+depth+1, col, bidColor)
+            self.addCell(cellName, index+depth+1, col, normalColor)
 
         # 累计
         col = 2
         for index in range(depth):
             cellName = "askVolumeSum"+str(depth-index)
-            self.addCell(cellName, index, col, askColor)
+            self.addCell(cellName, index, col, sumColor)
 
         self.addCell('blank', depth, col, lastColor)
 
         for index in range(depth):
             cellName = "bidVolumeSum"+str(index+1)
-            self.addCell(cellName, index+depth+1, col, bidColor)
+            self.addCell(cellName, index+depth+1, col, sumColor)
 
         """        
         self.addCell('bidPrice1', 11, 0, bidColor)
@@ -956,7 +992,7 @@ class TradingWidget(QtWidgets.QFrame):
     #offsetList = [OFFSET_OPEN,
     #              OFFSET_CLOSE]
     
-    gatewayList = ['']
+    gatewayList = []
 
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine, parent=None):
@@ -974,32 +1010,38 @@ class TradingWidget(QtWidgets.QFrame):
 
         self.initUi()
         self.registerEvent()
-        self.fullSymbols = {}  # 所有交易所的全部交易对
+        self.fullSymbols = []  # 所有交易所的全部交易对
 
         # 读取交易对信息
         self.load_symbols()
 
     def load_symbols(self):
         """从硬盘读取交易对对象"""
-        symbols_filename = 'symbols.json'
-        symbols_filepath = getJsonPath(symbols_filename, __file__)
-        try:
-            with open(symbols_filepath, "r") as f:
-                load_dict = json.load(f)
-                f.close()
-                print(load_dict)
-                if 'data' in load_dict:
-                    data = load_dict['data']
-                    self.fullSymbols = data
-        except Exception as e:
-            print(e)
+        #self.gatewayList
+        for gateway in self.gatewayList:
+            symbols_filename = 'GatewayConfig/' + gateway + '_connect.json'
+            #symbols_filepath = os.getcwd() + '\GatewayConfig' + '/' + symbols_filename
+            symbols_filepath = getJsonPath(symbols_filename, __file__)
+            try:
+                with open(symbols_filepath, "r") as f:
+                    load_dict = json.load(f)
+                    f.close()
+                    #print(load_dict)
+                    if 'symbols' in load_dict:
+                        symbols = load_dict['symbols']
+                        fullsymbol = {"gateway":gateway,"symbols":symbols}
+                        self.fullSymbols.append(fullsymbol)
+                        #print('self.fullSymbols is ')
+                        #print(self.fullSymbols)
+            except Exception as e:
+                print(e)
 
     #----------------------------------------------------------------------
     def initUi(self):
         """初始化界面"""
         self.setWindowTitle(vtText.TRADING)
-        self.setFixedHeight(500)
-        self.setFixedWidth(600)
+        self.setFixedHeight(590)
+        self.setFixedWidth(700)
         self.setFrameShape(self.Box)    # 设置边框
         self.setLineWidth(1)           
 
@@ -1043,8 +1085,9 @@ class TradingWidget(QtWidgets.QFrame):
         gridLeft.addWidget(self.linePrice, 3, 1)
         gridLeft.addWidget(self.lineVolume, 4, 1)
         
-        # 右边部分
+        # 左边部分
         self.depthMonitor = DepthMonitor(self.mainEngine, self.eventEngine)
+        self.dealsMonitor = DealsMonitor(self.mainEngine, self.eventEngine)
 
         # 发单按钮
         buttonBuy = QtWidgets.QPushButton(u'买入')
@@ -1076,6 +1119,7 @@ class TradingWidget(QtWidgets.QFrame):
         
         hbox = QtWidgets.QHBoxLayout()
         hbox.addWidget(self.depthMonitor)
+        hbox.addWidget(self.dealsMonitor)
         hbox.addLayout(vbox)  # 下单部分在右上角
 
         self.setLayout(hbox)
@@ -1351,7 +1395,7 @@ class ContractManager(QtWidgets.QWidget):
 
 ########################################################################
 class KlineManager(QtWidgets.QWidget):
-    """K线管理组件"""
+    """K线管理组件,未启用"""
     # ----------------------------------------------------------------------
     def __init__(self, mainEngine, parent=None):
         """Constructor"""
