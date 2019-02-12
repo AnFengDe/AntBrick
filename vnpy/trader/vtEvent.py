@@ -12,6 +12,7 @@ EVENT_LOG = 'eLog'                      # 日志事件，全局通用
 
 # Gateway相关
 EVENT_TICK = 'eTick.'                   # TICK行情事件，可后接具体的vtSymbol
+EVENT_DEAL = 'eDeal.'                   # 成交回报，自动推送
 EVENT_TRADE = 'eTrade.'                 # 成交回报事件
 EVENT_ORDER = 'eOrder.'                 # 报单回报事件
 EVENT_POSITION = 'ePosition.'           # 持仓回报事件
