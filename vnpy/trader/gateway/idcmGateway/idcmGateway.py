@@ -346,20 +346,24 @@ class IdcmRestApi(RestClient):
 
     # ----------------------------------------------------------------------
     def cancelOrder(self, cancelReq):
-        localID = cancelReq.orderID
-        orderID = self.localOrderDict.get(localID, None)
-        data = {
-            'Symbol': orderReq.symbol,  # 交易对
-            'OrderID': orderReq.volume,  # 交易数量
-            'Side': direction_  # 交易方向(0 买入 1 卖出)
-        }
-        if orderID:
-            self.addRequest('POST', 'api/v1/cancel_order', self.onCancelOrder, data)
+        #localID = cancelReq.orderID
+        #orderID = self.localOrderDict.get(localID, None)
+        try:
+            data = {
+                'Symbol': cancelReq.symbol,  # 交易对
+                'OrderID': cancelReq.orderID,  # 订单Id
+                'Side': directionMapReverse[cancelReq.direction]  # 交易方向(0 买入 1 卖出)
+            }
+        except Exception as e:
+            print(e)
+        self.addRequest('POST', 'api/v1/cancel_order', self.onCancelOrder, data)
+        #if orderID:
+        #    self.addRequest('POST', 'api/v1/cancel_order', self.onCancelOrder, data)
 
-            if localID in self.cancelReqDict:
-                del self.cancelReqDict[localID]
-        else:
-            self.cancelReqDict[localID] = cancelReq
+        #if localID in self.cancelReqDict:
+         #       del self.cancelReqDict[localID]
+        #else:
+        #    self.cancelReqDict[localID] = cancelReq
 
     # 获取IDCM最新币币行情数据
     def queryTicker(self):
@@ -550,7 +554,7 @@ class IdcmRestApi(RestClient):
         """
         下单失败回调：服务器明确告知下单失败
         """
-        #order = request.extra
+        order = request.extra
         order.status = STATUS_REJECTED
         self.gateway.onOrder(order)
 
@@ -559,7 +563,7 @@ class IdcmRestApi(RestClient):
         """
         下单失败回调：连接错误
         """
-        #order = request.extra
+        order = request.extra
         order.status = STATUS_REJECTED
         self.gateway.onOrder(order)
 
@@ -588,14 +592,24 @@ class IdcmRestApi(RestClient):
             self.orderDict[strOrderID] = order
             self.gateway.onOrder(order)
 
-            req = self.cancelReqDict.get(localID, None)
-            if req:
-                self.cancelOrder(req)
+            #req = self.cancelReqDict.get(localID, None)
+            #if req:
+            #    self.cancelOrder(req)
 
     # ----------------------------------------------------------------------
     def onCancelOrder(self, data, request):
-        """"""
-        pass
+        if data['result'] != 1:
+            try:
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+            except Exception as e:
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+            self.gateway.writeLog(msg)
+
+            #order.status = STATUS_REJECTED
+        else:
+            #order.status = STATUS_CANCELLED  # 已撤
+            print(data['data'])
+            #strOrderID = data['data']['orderid']
 
     # ----------------------------------------------------------------------
     def onFailed(self, httpStatusCode, request):  # type:(int, Request)->None
