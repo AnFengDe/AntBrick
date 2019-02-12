@@ -472,8 +472,8 @@ class DataEngine(object):
             self.workingOrderDict[order.vtOrderID] = order
             
         # 更新到持仓细节中
-        detail = self.getPositionDetail(order.vtSymbol)
-        detail.updateOrder(order)            
+        # detail = self.getPositionDetail(order.vtSymbol)
+        #detail.updateOrder(order)
             
     #----------------------------------------------------------------------
     def processTradeEvent(self, event):
@@ -601,16 +601,6 @@ class DataEngine(object):
             
             if contract:
                 detail.exchange = contract.exchange
-                
-                # 上期所合约
-                if contract.exchange == EXCHANGE_SHFE:
-                    detail.mode = detail.MODE_SHFE
-                
-                # 检查是否有平今惩罚
-                for productID in self.tdPenaltyList:
-                    if str(productID) in contract.symbol:
-                        detail.mode = detail.MODE_TDPENALTY
-                
         return detail
     
     #----------------------------------------------------------------------
