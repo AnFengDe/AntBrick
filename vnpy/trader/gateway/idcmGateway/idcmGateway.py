@@ -640,6 +640,7 @@ class WebsocketApi(IdcmWebsocketApi):
         self.callbackDict = {}
         self.channelSymbolDict = {}
         self.tickDict = {}
+        self.dealDict = {}
 
     # ----------------------------------------------------------------------
     def unpackData(self, data):
@@ -657,14 +658,16 @@ class WebsocketApi(IdcmWebsocketApi):
         #for symbol in symbols:
         #    self.subscribeMarketData(symbol)
 
+    """
     def subscribeMarketData(self, symbol):
-        """订阅行情"""
+        # 订阅行情
         tick = VtTickData()
         tick.gatewayName = self.gatewayName
         tick.symbol = symbol
         tick.exchange = "IDCM"
         tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
         self.tickDict[symbol] = tick
+    """
 
     def onConnect(self):
         """连接回调"""
@@ -748,6 +751,7 @@ class WebsocketApi(IdcmWebsocketApi):
                 tick.exchange = EXCHANGE_IDCM
                 tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
                 self.tickDict[symbol] = tick
+                self.dealDict[symbol] = tick
 
         for symbol in self.symbols:
             # 订阅行情深度,支持5，10，20档
@@ -792,7 +796,7 @@ class WebsocketApi(IdcmWebsocketApi):
     def onDeals(self, d):
         """"""
         symbol = getSymbolFromChannel(d['channel'])
-        deal = self.tickDict[symbol]
+        deal = self.dealDict[symbol]
         data = d['data'][0]
 
         #deal.price = float(data['price'])
