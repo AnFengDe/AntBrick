@@ -11,7 +11,7 @@ import hmac
 import sys
 import base64
 import zlib
-from datetime import timedelta
+from datetime import timedelta, datetime
 from copy import copy
 
 from vnpy.api.rest import RestClient, Request
@@ -162,7 +162,7 @@ class IdcmGateway(VtGateway):
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):
         """发单"""
-        return self.restApi.sendOrder(orderReq)
+        self.restApi.sendOrder(orderReq)
 
     # ----------------------------------------------------------------------
     def cancelOrder(self, cancelOrderReq):
@@ -306,18 +306,17 @@ class IdcmRestApi(RestClient):
             """"""
             #self.orderID += 1
             #orderID = str(self.loginTime + self.orderID)
-            vtOrderID = '.'.join([self.gatewayName, localID])
+            #vtOrderID = '.'.join([self.gatewayName, localID])
 
             direction_ = directionMap[orderReq.direction]
             type_ = orderTypeMap[orderReq.orderType]
             data = {
-                #'client_oid': orderID,
                 'Symbol': orderReq.symbol,  # 交易对
                 'size': orderReq.volume,  # 交易数量
                 'price': orderReq.price,
                 'Side': direction_,  # 交易方向(0 买入 1 卖出)
                 'type': type_,  # 订单类型 (0 市场价 1 限价)
-                "Amount": float(orderReq.volume * orderReq.price) # 订单总金额 - 市价必填
+                "Amount": float(orderReq.volume * orderReq.price)  # 订单总金额 - 市价必填
             }
 
             # 缓存委托
@@ -326,13 +325,15 @@ class IdcmRestApi(RestClient):
             order.symbol = orderReq.symbol
             #order.exchange = 'IDCM'
             order.vtSymbol = '.'.join([order.symbol, order.exchange])
-            order.orderID = localID
-            order.vtOrderID = vtOrderID
+            #order.orderID = localID
+            #order.vtOrderID = vtOrderID
             order.direction = orderReq.direction
             order.ordertType = orderReq.orderType
             order.price = orderReq.price
-            order.totalVolume = orderReq.volume * orderReq.price
+            order.volume = orderReq.volume
+            # order.totalVolume = orderReq.volume * orderReq.price
             order.status = STATUS_UNKNOWN
+            order.orderTime = datetime.now().strftime('%H:%M:%S')
 
             self.orderBufDict[localID] = order
 
@@ -340,9 +341,6 @@ class IdcmRestApi(RestClient):
                             callback=self.onSendOrder,
                             data=data,
                             extra=localID)
-            #print('self.orderBufDict')
-            #print(self.orderBufDict)
-            return vtOrderID
         except Exception as e:
             print(e)
 
@@ -350,10 +348,13 @@ class IdcmRestApi(RestClient):
     def cancelOrder(self, cancelReq):
         localID = cancelReq.orderID
         orderID = self.localOrderDict.get(localID, None)
-
+        data = {
+            'Symbol': orderReq.symbol,  # 交易对
+            'OrderID': orderReq.volume,  # 交易数量
+            'Side': direction_  # 交易方向(0 买入 1 卖出)
+        }
         if orderID:
-            path = '/v1/order/orders/%s/submitcancel' % orderID
-            self.addRequest('POST', path, self.onCancelOrder)
+            self.addRequest('POST', 'api/v1/cancel_order', self.onCancelOrder, data)
 
             if localID in self.cancelReqDict:
                 del self.cancelReqDict[localID]
@@ -400,6 +401,7 @@ class IdcmRestApi(RestClient):
                             callback=self.onQueryHistoryOrder)
 
     # 获取IDCM最新币币行情数据
+    """
     def onqueryTicker(self, data, request):
         if data['result'] == 1:
             symbol = json.loads(request.data)['Symbol']
@@ -419,6 +421,7 @@ class IdcmRestApi(RestClient):
             except Exception as e:
                 msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
+    """
 
     def onQueryAccount(self, data, request):
         """"""
@@ -575,10 +578,13 @@ class IdcmRestApi(RestClient):
             order.status = STATUS_REJECTED
             self.gateway.onOrder(order)  # TODO may cause bug
         else:
-            orderID = data['data']
-            strOrderID = str(orderID)
+            #orderID = data['data']['orderid']
+            #strOrderID = str(orderID)
+            order.status = STATUS_ORDERED  # 已报
+            strOrderID = data['data']['orderid']
 
             self.localOrderDict[localID] = strOrderID
+            order.orderID = strOrderID  # 服务器返回orderid写入order
             self.orderDict[strOrderID] = order
             self.gateway.onOrder(order)
 
