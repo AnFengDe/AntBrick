@@ -800,11 +800,15 @@ class WebsocketApi(IdcmWebsocketApi):
         deal.lastPrice = float(data['price'])
         deal.volume = float(data['amount'])
         deal.type = data['type']
-
-        deal.datetime = datetime.fromtimestamp(data['timestamp'])
-        deal.time = deal.datetime.strftime('%H:%M:%S')
-        #tick = copy(tick)
-        self.gateway.onTick(deal)
+        try:
+            deal.datetime = datetime.fromtimestamp(data['timestamp'])
+            deal.time = deal.datetime.strftime('%H:%M:%S')
+            #print(deal.datetime)
+            #print(deal.time)
+            #tick = copy(tick)
+            self.gateway.onDeal(deal)
+        except Exception as e:
+            print(e)
 
     # ----------------------------------------------------------------------
     def onDepth(self, d):
