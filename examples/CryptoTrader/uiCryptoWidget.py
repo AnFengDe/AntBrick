@@ -541,9 +541,9 @@ class DealsMonitor(BasicMonitor):
 
         d = OrderedDict()
         #d['gatewayName'] = {'chinese': vtText.GATEWAY, 'cellType': BasicCell}
-        d['lastPrice'] = {'chinese': vtText.PRICE, 'cellType': BasicCell}
+        d['lastPrice'] = {'chinese': vtText.DEAL_PRICE, 'cellType': BasicCell}
         d['volume'] = {'chinese': vtText.TRADED_VOLUME, 'cellType': BasicCell}
-        d['time'] = {'chinese': vtText.ORDER_TIME, 'cellType': BasicCell}
+        d['time'] = {'chinese': vtText.DEAL_TIME, 'cellType': BasicCell}
         d['symbol'] = {'chinese': vtText.SYMBOL, 'cellType': BasicCell}
         self.setHeaderDict(d)
 
