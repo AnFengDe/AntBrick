@@ -58,7 +58,7 @@ class MainWindow(QtWidgets.QMainWindow):
         widgetWorkingOrderM, dockWorkingOrderM = self.createDock(WorkingOrderMonitor, vtText.WORKING_ORDER, QtCore.Qt.LeftDockWidgetArea)  # 可撤
         widgetTradeM, dockTradeM = self.createDock(TradeMonitor, vtText.TRADE, QtCore.Qt.LeftDockWidgetArea)
 
-        self.tabifyDockWidget(dockOrderM, dockWorkingOrderM)
+        #self.tabifyDockWidget(dockOrderM, dockWorkingOrderM)
         self.tabifyDockWidget(dockAccountM, dockLogM)
         
         # 保存默认设置
