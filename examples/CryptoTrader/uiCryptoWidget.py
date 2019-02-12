@@ -548,7 +548,7 @@ class DealsMonitor(BasicMonitor):
         self.setHeaderDict(d)
 
         self.setDataKey('time')
-        self.setEventType(EVENT_TICK)
+        self.setEventType(EVENT_DEAL)
         self.setFont(BASIC_FONT)
         #self.setSaveData(True)
         #self.setSorting(True)
