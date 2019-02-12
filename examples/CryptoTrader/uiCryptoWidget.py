@@ -544,6 +544,7 @@ class DealsMonitor(BasicMonitor):
         d['lastPrice'] = {'chinese': vtText.PRICE, 'cellType': BasicCell}
         d['volume'] = {'chinese': vtText.TRADED_VOLUME, 'cellType': BasicCell}
         d['time'] = {'chinese': vtText.ORDER_TIME, 'cellType': BasicCell}
+        d['symbol'] = {'chinese': vtText.SYMBOL, 'cellType': BasicCell}
         self.setHeaderDict(d)
 
         self.setDataKey('time')
