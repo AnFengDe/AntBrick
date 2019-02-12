@@ -29,6 +29,8 @@ TRADE_TIME = u'成交时间'
 
 ORDER_VOLUME = u'委托数量'
 TRADED_VOLUME = u'成交数量'
+DEAL_PRICE = u'成交价格'
+DEAL_TIME = u'成交时间'
 ORDER_STATUS = u'委托状态'
 ORDER_TIME = u'委托时间'
 SYMBOL = u'交易对'
