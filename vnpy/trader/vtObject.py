@@ -218,7 +218,8 @@ class VtOrderData(VtBaseData):
         self.direction = EMPTY_UNICODE          # 报单方向 买入/卖出
         self.orderType = EMPTY_UNICODE          # 订单类型 0	市场价  1	 限价
         self.price = EMPTY_FLOAT                # 报单价格
-        self.totalVolume = EMPTY_INT            # 报单总数量
+        self.volume = EMPTY_FLOAT               # 报单数量
+        self.totalVolume = EMPTY_INT            # 报单总金额
         self.tradedVolume = EMPTY_INT           # 报单成交数量
         self.status = EMPTY_UNICODE             # 报单状态  -2	取消交易 -1	无效 0	等待成交  1	部份交易  2	全部成交 3	已申报
 
