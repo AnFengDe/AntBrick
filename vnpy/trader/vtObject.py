@@ -227,8 +227,8 @@ class VtOrderData(VtBaseData):
         self.cancelTime = EMPTY_STRING          # 撤单时间
         
         # CTP/LTS相关
-        self.frontID = EMPTY_INT                # 前置机编号
-        self.sessionID = EMPTY_INT              # 连接编号
+        #self.frontID = EMPTY_INT                # 前置机编号
+        #self.sessionID = EMPTY_INT              # 连接编号
 
     #----------------------------------------------------------------------
     @staticmethod
@@ -496,8 +496,8 @@ class VtCancelOrderReq(object):
         
         # 以下字段主要和CTP、LTS类接口相关
         self.orderID = EMPTY_STRING             # 报单号
-        self.frontID = EMPTY_STRING             # 前置机号
-        self.sessionID = EMPTY_STRING           # 会话号
+        #self.frontID = EMPTY_STRING             # 前置机号
+        #self.sessionID = EMPTY_STRING           # 会话号
 
 
 ########################################################################
