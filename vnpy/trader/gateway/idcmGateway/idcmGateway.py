@@ -111,7 +111,7 @@ class IdcmGateway(VtGateway):
         self.accountDict = {}
         self.orderDict = {}
         self.localOrderDict = {}
-        self.orderLocalDict = {}
+        #self.orderLocalDict = {}
 
         self.qryEnabled = False         # 是否要启动循环查询
 
@@ -251,7 +251,7 @@ class IdcmRestApi(RestClient):
 
         self.accountDict = gateway.accountDict
         self.orderDict = gateway.orderDict
-        self.orderLocalDict = gateway.orderLocalDict
+        #self.orderLocalDict = gateway.orderLocalDict
         self.localOrderDict = gateway.localOrderDict
 
         self.accountid = ''  #
@@ -306,7 +306,7 @@ class IdcmRestApi(RestClient):
             """"""
             #self.orderID += 1
             #orderID = str(self.loginTime + self.orderID)
-            #vtOrderID = '.'.join([self.gatewayName, localID])
+            vtOrderID = '.'.join([self.gatewayName, localID])
 
             direction_ = directionMap[orderReq.direction]
             type_ = orderTypeMap[orderReq.orderType]
@@ -326,11 +326,12 @@ class IdcmRestApi(RestClient):
             #order.exchange = 'IDCM'
             order.vtSymbol = '.'.join([order.symbol, order.exchange])
             #order.orderID = localID
-            #order.vtOrderID = vtOrderID
+            order.vtOrderID = vtOrderID
             order.direction = orderReq.direction
             order.ordertType = orderReq.orderType
             order.price = orderReq.price
             order.volume = orderReq.volume
+            #order.localID = localID
             # order.totalVolume = orderReq.volume * orderReq.price
             order.status = STATUS_UNKNOWN
             order.orderTime = datetime.now().strftime('%H:%M:%S')
@@ -352,14 +353,11 @@ class IdcmRestApi(RestClient):
             data = {
                 'Symbol': cancelReq.symbol,  # 交易对
                 'OrderID': cancelReq.orderID,  # 订单Id
-                'Side': directionMapReverse[cancelReq.direction]  # 交易方向(0 买入 1 卖出)
+                'Side': directionMap[cancelReq.direction]  # 交易方向(0 买入 1 卖出)
             }
         except Exception as e:
             print(e)
-        self.addRequest('POST', 'api/v1/cancel_order', self.onCancelOrder, data)
-        #if orderID:
-        #    self.addRequest('POST', 'api/v1/cancel_order', self.onCancelOrder, data)
-
+        self.addRequest('POST', '/api/v1/cancel_order', callback=self.onCancelOrder, data=data, extra=cancelReq)
         #if localID in self.cancelReqDict:
          #       del self.cancelReqDict[localID]
         #else:
@@ -471,7 +469,7 @@ class IdcmRestApi(RestClient):
                     self.gateway.localID += 1
                     localID = str(self.gateway.localID)
 
-                    self.orderLocalDict[strOrderID] = localID
+                    #self.orderLocalDict[strOrderID] = localID
                     self.localOrderDict[localID] = strOrderID
 
                     order = VtOrderData()
@@ -580,7 +578,7 @@ class IdcmRestApi(RestClient):
             self.gateway.writeLog(msg)
 
             order.status = STATUS_REJECTED
-            self.gateway.onOrder(order)  # TODO may cause bug
+            self.gateway.onOrder(order)
         else:
             #orderID = data['data']['orderid']
             #strOrderID = str(orderID)
@@ -604,11 +602,13 @@ class IdcmRestApi(RestClient):
             except Exception as e:
                 msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
-
-            #order.status = STATUS_REJECTED
         else:
+            order = request.extra
+            order.status = STATUS_CANCELLED # 订单状态
+            self.gateway.onOrder(order)
+            #print(request)
             #order.status = STATUS_CANCELLED  # 已撤
-            print(data['data'])
+            #print(data['data'])
             #strOrderID = data['data']['orderid']
 
     # ----------------------------------------------------------------------
@@ -653,7 +653,7 @@ class WebsocketApi(IdcmWebsocketApi):
 
         self.accountDict = gateway.accountDict
         self.orderDict = gateway.orderDict
-        self.orderLocalDict = gateway.orderLocalDict
+        #self.orderLocalDict = gateway.orderLocalDict
         self.localOrderDict = gateway.localOrderDict
 
         self.tradeID = 0
