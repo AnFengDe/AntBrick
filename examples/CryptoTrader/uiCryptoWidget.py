@@ -120,7 +120,7 @@ class BidCell(BasicCell):
         super(BidCell, self).__init__(text)
         
         self.setForeground(QtGui.QColor('black'))
-        self.setBackground(QtGui.QColor(255,174,201))
+        self.setBackground(QtGui.QColor(160, 255, 160))
         
     #----------------------------------------------------------------------
     def setContent(self, text):
@@ -138,7 +138,7 @@ class AskCell(BasicCell):
         super(AskCell, self).__init__(text)
         
         self.setForeground(QtGui.QColor('black'))
-        self.setBackground(QtGui.QColor(160,255,160))
+        self.setBackground(QtGui.QColor(255, 174, 201))
         
     #----------------------------------------------------------------------
     def setContent(self, text):
@@ -544,6 +544,7 @@ class DealsMonitor(BasicMonitor):
         #d['gatewayName'] = {'chinese': vtText.GATEWAY, 'cellType': BasicCell}
         d['lastPrice'] = {'chinese': vtText.DEAL_PRICE, 'cellType': BasicCell}
         d['volume'] = {'chinese': vtText.TRADED_VOLUME, 'cellType': BasicCell}
+        #d['type'] = {'chinese': vtText.TRADED_DIRECTION, 'cellType': BasicCell}  内外盘
         d['time'] = {'chinese': vtText.DEAL_TIME, 'cellType': BasicCell}
         d['symbol'] = {'chinese': vtText.SYMBOL, 'cellType': BasicCell}
         self.setHeaderDict(d)
@@ -906,12 +907,18 @@ class DepthMonitor(QtWidgets.QTableWidget):
 
             cellName = "bidVolumeSum" + str(index+1)
             tick_cellName = "bidVolume" + str(index+1)
-            bidVolumeSum += getattr(tick, tick_cellName)
+            if getattr(tick, tick_cellName) > 0:
+                bidVolumeSum += getattr(tick, tick_cellName)
+            else:
+                bidVolumeSum =0
             self.updateCell(cellName, bidVolumeSum)
 
             cellName = "askVolumeSum" + str(index+1)
             tick_cellName = "askVolume" + str(index+1)
-            askVolumeSum += getattr(tick, tick_cellName)
+            if getattr(tick, tick_cellName) > 0:
+                askVolumeSum += getattr(tick, tick_cellName)
+            else:
+                askVolumeSum = 0
             self.updateCell(cellName, askVolumeSum)
 
         """
