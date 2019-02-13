@@ -604,14 +604,15 @@ class OrderMonitor(BasicMonitor):
     def cancelOrder(self, cell):
         """根据单元格的数据撤单"""
         order = cell.data
-        
-        req = VtCancelOrderReq()
-        req.symbol = order.symbol
-        req.exchange = order.exchange
-        req.frontID = order.frontID
-        req.sessionID = order.sessionID
-        req.orderID = order.orderID
-        self.mainEngine.cancelOrder(req, order.gatewayName)
+        #req = VtCancelOrderReq()
+        # req.symbol = order.symbol
+        #req.exchange = order.exchange
+        #req.frontID = order.frontID
+        #req.sessionID = order.sessionID
+        #req.direction = order.direction  # 交易方向
+        #req.orderID = order.orderID
+        #req.localID = order.localID
+        self.mainEngine.cancelOrder(order, order.gatewayName)
 
 
 ########################################################################
@@ -1126,7 +1127,7 @@ class TradingWidget(QtWidgets.QFrame):
         # 关联更新
         self.comboGateway.currentIndexChanged.connect(self.updateSymbolForGateway)  # 根据交易所变化选择交易对
         self.comboSymbol.currentTextChanged.connect(self.updateVtSymbol)  # 写入当前交易对
-        self.depthMonitor.itemDoubleClicked.connect(self.updatePrice)
+        self.depthMonitor.itemDoubleClicked.connect(self.updatePrice)  # 双击加入委托价格
 
     def updateSymbolForGateway(self):
         """根据交易所读取交易对"""
