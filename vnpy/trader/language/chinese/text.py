@@ -27,6 +27,8 @@ PRICE = u'委托价格'
 AVGPRICE = u'平均成交价格'
 TRADE_TIME = u'成交时间'
 
+TRADED_DIRECTION = u'内外盘'
+
 ORDER_VOLUME = u'委托数量'
 TRADED_VOLUME = u'成交数量'
 DEAL_PRICE = u'成交价格'

@@ -6,6 +6,10 @@ EMPTY_UNICODE = u''
 EMPTY_INT = 0
 EMPTY_FLOAT = 0.0
 
+TRADED_BUY = u'外盘'
+TRADED_SELL = u'内盘'
+
+
 # 方向常量
 DIRECTION_NONE = u'无方向'
 DIRECTION_LONG = u'多'
