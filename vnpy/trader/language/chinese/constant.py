@@ -31,6 +31,7 @@ STATUS_ALLTRADED = u'全部成交'
 STATUS_CANCELLED = u'已撤销'
 STATUS_REJECTED = u'拒单'
 STATUS_UNKNOWN = u'未知'
+STATUS_ORDERED = u'已报'
 
 # 合约类型常量
 PRODUCT_EQUITY = u'股票'
