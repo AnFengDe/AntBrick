@@ -26,6 +26,11 @@ REST_HOST = 'https://api.IDCM.cc:8323'
 WEBSOCKET_HOST = 'wss://real.idcm.cc:10330/websocket'
 EXCHANGE_IDCM = "IDCM"
 
+# 内外盘
+dealStatusMap = {}
+dealStatusMap[TRADED_BUY] = 2   # 外盘
+dealStatusMap[TRADED_SELL] = 1  # 内盘
+
 # 委托状态类型映射
 orderStatusMap = {}
 orderStatusMap[STATUS_CANCELLED] = -2
@@ -44,6 +49,7 @@ orderTypeMap = {}
 orderTypeMap[(PRICETYPE_MARKETPRICE)] = 0
 orderTypeMap[(PRICETYPE_LIMITPRICE)] = 1
 
+dealStatusMapReverse = {v: k for k, v in dealStatusMap.items()}
 orderStatusMapReverse = {v: k for k, v in orderStatusMap.items()}
 directionMapReverse = {v: k for k, v in directionMap.items()}
 orderTypeMapReverse = {v: k for k, v in orderTypeMap.items()}
@@ -156,7 +162,7 @@ class IdcmGateway(VtGateway):
         self.wsApi.connect(apiKey, secretKey, symbols)
 
         # 初始化并启动查询
-        self.initQuery()
+        #self.initQuery()
 
     def subscribe(self, subscribeReq):
         """订阅行情"""
@@ -254,7 +260,6 @@ class IdcmRestApi(RestClient):
 
         self.accountDict = gateway.accountDict
         self.orderDict = gateway.orderDict
-        #self.orderLocalDict = gateway.orderLocalDict
         self.localOrderDict = gateway.localOrderDict
 
         self.accountid = ''  #
@@ -307,9 +312,6 @@ class IdcmRestApi(RestClient):
         try:
             self.gateway.localID += 1
             localID = str(self.gateway.localID)
-            """"""
-            #self.orderID += 1
-            #orderID = str(self.loginTime + self.orderID)
             vtOrderID = '.'.join([self.gatewayName, localID])
 
             direction_ = directionMap[orderReq.direction]
@@ -351,8 +353,6 @@ class IdcmRestApi(RestClient):
 
     # ----------------------------------------------------------------------
     def cancelOrder(self, cancelReq):
-        #localID = cancelReq.orderID
-        #orderID = self.localOrderDict.get(localID, None)
         try:
             data = {
                 'Symbol': cancelReq.symbol,  # 交易对
@@ -362,10 +362,6 @@ class IdcmRestApi(RestClient):
         except Exception as e:
             print(e)
         self.addRequest('POST', '/api/v1/cancel_order', callback=self.onCancelOrder, data=data, extra=cancelReq)
-        #if localID in self.cancelReqDict:
-         #       del self.cancelReqDict[localID]
-        #else:
-        #    self.cancelReqDict[localID] = cancelReq
 
     # 获取IDCM最新币币行情数据
     def queryTicker(self):
@@ -414,6 +410,8 @@ class IdcmRestApi(RestClient):
             }
             self.addRequest('POST', path, data=req,
                             callback=self.onQueryHistoryOrder)
+
+        self.gateway.writeLog(u'历史订单查询成功')
 
     # 获取IDCM最新币币行情数据
     """
@@ -594,8 +592,6 @@ class IdcmRestApi(RestClient):
             order.status = STATUS_REJECTED
             self.gateway.onOrder(order)
         else:
-            #orderID = data['data']['orderid']
-            #strOrderID = str(orderID)
             order.status = STATUS_ORDERED  # 已报
             strOrderID = data['data']['orderid']
 
@@ -620,10 +616,6 @@ class IdcmRestApi(RestClient):
             order = request.extra
             order.status = STATUS_CANCELLED # 订单状态
             self.gateway.onOrder(order)
-            #print(request)
-            #order.status = STATUS_CANCELLED  # 已撤
-            #print(data['data'])
-            #strOrderID = data['data']['orderid']
 
     # ----------------------------------------------------------------------
     def onFailed(self, httpStatusCode, request):  # type:(int, Request)->None
@@ -667,7 +659,6 @@ class WebsocketApi(IdcmWebsocketApi):
 
         self.accountDict = gateway.accountDict
         self.orderDict = gateway.orderDict
-        #self.orderLocalDict = gateway.orderLocalDict
         self.localOrderDict = gateway.localOrderDict
 
         self.tradeID = 0
@@ -723,7 +714,7 @@ class WebsocketApi(IdcmWebsocketApi):
             elif 'ticker' in data['channel']:
                 self.onTick(data)
             elif 'deals' in data['channel']:
-               self.onDeals(data)
+                self.onDeals(data)
 
     # ----------------------------------------------------------------------
     def onDisconnected(self):
@@ -769,7 +760,6 @@ class WebsocketApi(IdcmWebsocketApi):
                 }
             }
             self.sendReq(req)
-            #self.callbackDict['login'] = self.onLogin
         except Exception as e:
             print(e)
 
@@ -778,14 +768,13 @@ class WebsocketApi(IdcmWebsocketApi):
         for symbol in self.symbols:
             #l.append('ticker.' + symbol)
             #l.append('depth.L20.' + symbol)
-            if 1:  # debug only
-                tick = VtTickData()
-                tick.gatewayName = self.gatewayName
-                tick.symbol = symbol
-                tick.exchange = EXCHANGE_IDCM
-                tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
-                self.tickDict[symbol] = tick
-                self.dealDict[symbol] = tick
+            tick = VtTickData()
+            tick.gatewayName = self.gatewayName
+            tick.symbol = symbol
+            tick.exchange = EXCHANGE_IDCM
+            tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
+            self.tickDict[symbol] = tick
+            self.dealDict[symbol] = tick
 
         for symbol in self.symbols:
             # 订阅行情深度,支持5，10，20档
@@ -815,35 +804,29 @@ class WebsocketApi(IdcmWebsocketApi):
     # ----------------------------------------------------------------------
     def onTick(self, d):
         """"""
-        symbol = getSymbolFromChannel(d['channel'])
-        tick = self.tickDict[symbol]
         data = d['data']
 
+        symbol = getSymbolFromChannel(d['channel'])
+        tick = self.tickDict[symbol]
         tick.lastPrice = float(data['last'])
         tick.highPrice = float(data['high'])
         tick.lowPrice = float(data['low'])
         tick.volume = float(data['vol'])
 
-        #tick = copy(tick)
         self.gateway.onTick(tick)
 
     def onDeals(self, d):
         """"""
-        symbol = getSymbolFromChannel(d['channel'])
-        deal = self.dealDict[symbol]
         data = d['data'][0]
 
-        #deal.price = float(data['price'])
-        #deal.amount = float(data['amount'])
+        symbol = getSymbolFromChannel(d['channel'])
+        deal = self.dealDict[symbol]
         deal.lastPrice = float(data['price'])
         deal.volume = float(data['amount'])
-        deal.type = data['type']
+        deal.type = dealStatusMapReverse[data['type']]
         try:
             deal.datetime = datetime.fromtimestamp(data['timestamp'])
             deal.time = deal.datetime.strftime('%H:%M:%S')
-            #print(deal.datetime)
-            #print(deal.time)
-            #tick = copy(tick)
             self.gateway.onDeal(deal)
         except Exception as e:
             print(e)
@@ -862,10 +845,10 @@ class WebsocketApi(IdcmWebsocketApi):
                 for index in range(depth):
                     if index == len(bids):
                         break
-                    para = "bidPrice" + str(depth - index)
+                    para = "bidPrice" + str(index+1)
                     setattr(tick, para, bids[index]['Price'])
 
-                    para = "bidVolume" + str(depth - index)
+                    para = "bidVolume" + str(index+1)
                     setattr(tick, para, bids[index]['Amount'])
             except Exception as e:
                 print(e)
@@ -874,10 +857,10 @@ class WebsocketApi(IdcmWebsocketApi):
                 for index in range(depth):
                     if index == len(asks):
                         break
-                    para = "askPrice" + str(depth - index)
+                    para = "askPrice" + str(index+1)
                     setattr(tick, para, asks[index]['Price'])
 
-                    para = "askVolume" + str(depth - index)
+                    para = "askVolume" + str(index+1)
                     setattr(tick, para, asks[index]['Amount'])
             except Exception as e:
                 print(e)
@@ -886,7 +869,6 @@ class WebsocketApi(IdcmWebsocketApi):
             tick.date = tick.datetime.strftime('%Y%m%d')
             tick.time = tick.datetime.strftime('%H:%M:%S')
 
-            #if tick.lastPrice:
             self.gateway.onTick(copy(tick))
         except Exception as e:
             print(e)
