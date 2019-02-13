@@ -28,10 +28,12 @@ EXCHANGE_IDCM = "IDCM"
 
 # 委托状态类型映射
 statusMapReverse = {}
+statusMapReverse['-2'] = STATUS_CANCELLED
+statusMapReverse['-1'] = STATUS_NOTVALID
 statusMapReverse['0'] = STATUS_NOTTRADED
 statusMapReverse['1'] = STATUS_PARTTRADED
 statusMapReverse['2'] = STATUS_ALLTRADED
-statusMapReverse['-1'] = STATUS_CANCELLED
+statusMapReverse['3'] = STATUS_ORDERED
 
 # 方向和订单类型映射
 directionMap = {}
@@ -334,7 +336,7 @@ class IdcmRestApi(RestClient):
             #order.localID = localID
             # order.totalVolume = orderReq.volume * orderReq.price
             order.status = STATUS_UNKNOWN
-            order.orderTime = datetime.now().strftime('%H:%M:%S')
+            order.orderTime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
             self.orderBufDict[localID] = order
 
@@ -844,18 +846,29 @@ class WebsocketApi(IdcmWebsocketApi):
             asks = d['data']['asks']
 
             depth = 20
-            for index in range(depth):
-                para = "bidPrice" + str(depth - index)
-                setattr(tick, para, bids[index]['Price'])
+            try:
+                for index in range(depth):
+                    if index == len(bids):
+                        break
+                    para = "bidPrice" + str(depth - index)
+                    setattr(tick, para, bids[index]['Price'])
 
-                para = "askPrice" + str(depth - index)
-                setattr(tick, para, asks[index]['Price'])
+                    para = "bidVolume" + str(depth - index)
+                    setattr(tick, para, bids[index]['Amount'])
+            except Exception as e:
+                print(e)
 
-                para = "bidVolume" + str(depth - index)
-                setattr(tick, para, bids[index]['Amount'])
+            try:
+                for index in range(depth):
+                    if index == len(asks):
+                        break
+                    para = "askPrice" + str(depth - index)
+                    setattr(tick, para, asks[index]['Price'])
 
-                para = "askVolume" + str(depth - index)
-                setattr(tick, para, asks[index]['Amount'])
+                    para = "askVolume" + str(depth - index)
+                    setattr(tick, para, asks[index]['Amount'])
+            except Exception as e:
+                print(e)
 
             tick.datetime = datetime.fromtimestamp(d['timestamp'])
             tick.date = tick.datetime.strftime('%Y%m%d')
