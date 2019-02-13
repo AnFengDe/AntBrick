@@ -211,7 +211,8 @@ class VtOrderData(VtBaseData):
         self.exchange = EMPTY_STRING            # 交易所代码
         self.vtSymbol = EMPTY_STRING  # 索引，统一格式：f"{symbol}.{exchange}"
         
-        self.orderID = EMPTY_STRING             # 订单编号 gateway内部自己生成的编号
+        self.orderID = EMPTY_STRING             # 订单编号 gateway服务器返回的编号
+        self.localID = EMPTY_STRING             # 订单编号 本地生成的编号
         self.vtOrderID = EMPTY_STRING  # 索引，统一格式：f"{gatewayName}.{orderId}"
         
         # 报单相关
@@ -494,8 +495,8 @@ class VtCancelOrderReq(object):
         self.exchange = EMPTY_STRING            # 交易所
         self.vtSymbol = EMPTY_STRING            # VT合约代码
         
-        # 以下字段主要和CTP、LTS类接口相关
         self.orderID = EMPTY_STRING             # 报单号
+        self.localID = EMPTY_STRING             # 内部序号
         #self.frontID = EMPTY_STRING             # 前置机号
         #self.sessionID = EMPTY_STRING           # 会话号
 
