@@ -510,13 +510,14 @@ class TradeMonitor(BasicMonitor):
         
         d = OrderedDict()
         d['gatewayName'] = {'chinese':vtText.GATEWAY, 'cellType':BasicCell}
-        d['tradeID'] = {'chinese':vtText.TRADE_ID, 'cellType':NumCell}
+        #d['tradeID'] = {'chinese':vtText.TRADE_ID, 'cellType':NumCell}
         d['orderID'] = {'chinese':vtText.ORDER_ID, 'cellType':NumCell}
         d['symbol'] = {'chinese':vtText.CONTRACT_SYMBOL, 'cellType':BasicCell}
         d['direction'] = {'chinese':vtText.DIRECTION, 'cellType':DirectionCell}
         d['price'] = {'chinese':vtText.PRICE, 'cellType':BasicCell}
+        d['avgprice'] = {'chinese': vtText.AVGPRICE, 'cellType': BasicCell}
         d['volume'] = {'chinese':vtText.VOLUME, 'cellType':BasicCell}
-        d['tradeTime'] = {'chinese':vtText.TRADE_TIME, 'cellType':BasicCell}
+        d['orderTime'] = {'chinese':vtText.ORDER_TIME, 'cellType':BasicCell}
         self.setHeaderDict(d)
         
         self.setEventType(EVENT_TRADE)
@@ -1249,13 +1250,7 @@ class TradingWidget(QtWidgets.QFrame):
         """一键撤销所有委托"""
         l = self.mainEngine.getAllWorkingOrders()
         for order in l:
-            req = VtCancelOrderReq()
-            req.symbol = order.symbol
-            req.exchange = order.exchange
-            req.frontID = order.frontID
-            req.sessionID = order.sessionID
-            req.orderID = order.orderID
-            self.mainEngine.cancelOrder(req, order.gatewayName)
+            self.mainEngine.cancelOrder(order, order.gatewayName)
 
 
 ########################################################################
