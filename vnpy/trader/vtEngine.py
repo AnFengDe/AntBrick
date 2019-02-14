@@ -483,8 +483,8 @@ class DataEngine(object):
         self.tradeDict[trade.vtTradeID] = trade
     
         # 更新到持仓细节中
-        detail = self.getPositionDetail(trade.vtSymbol)
-        detail.updateTrade(trade)        
+        #detail = self.getPositionDetail(trade.vtSymbol)
+        #detail.updateTrade(trade)
 
     #----------------------------------------------------------------------
     def processPositionEvent(self, event):

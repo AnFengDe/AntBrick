@@ -214,7 +214,8 @@ class VtOrderData(VtBaseData):
         self.orderID = EMPTY_STRING             # 订单编号 gateway服务器返回的编号
         self.localID = EMPTY_STRING             # 订单编号 本地生成的编号
         self.vtOrderID = EMPTY_STRING  # 索引，统一格式：f"{gatewayName}.{orderId}"
-        
+        self.vtTradeID = EMPTY_STRING           # 成交编号
+
         # 报单相关
         self.direction = EMPTY_UNICODE          # 报单方向 买入/卖出
         self.orderType = EMPTY_UNICODE          # 订单类型 0	市场价  1	 限价

@@ -397,7 +397,7 @@ class IdcmRestApi(RestClient):
                 'Symbol': symbol,
                 "PageIndex": 1,  # 当前页数
                 "PageSize": 200,  # 每页数据条数，最多不超过200
-                "Status": orderStatusMap[STATUS_NOTTRADED]  # (查订单状态表)
+                "Status": orderStatusMap[STATUS_NOTTRADED]  # 未成交
             }
             self.addRequest('POST', path, data=req,
                             callback=self.onQueryHistoryOrder)
@@ -406,11 +406,19 @@ class IdcmRestApi(RestClient):
                 'Symbol': symbol,
                 "PageIndex": 1,  # 当前页数
                 "PageSize": 200,  # 每页数据条数，最多不超过200
-                "Status": orderStatusMap[STATUS_PARTTRADED]  # (查订单状态表)
+                "Status": orderStatusMap[STATUS_PARTTRADED]  # 部分成交
             }
             self.addRequest('POST', path, data=req,
                             callback=self.onQueryHistoryOrder)
 
+            req = {
+                'Symbol': symbol,
+                "PageIndex": 1,  # 当前页数
+                "PageSize": 200,  # 每页数据条数，最多不超过200
+                "Status": orderStatusMap[STATUS_ALLTRADED]  # 未成交
+            }
+            self.addRequest('POST', path, data=req,
+                            callback=self.onQueryHistoryOrder)
         self.gateway.writeLog(u'历史订单查询成功')
 
     # 获取IDCM最新币币行情数据
@@ -546,7 +554,11 @@ class IdcmRestApi(RestClient):
                     dt = datetime.fromtimestamp(d['timestamp'])
                     order.orderTime = dt.strftime('%Y-%m-%d %H:%M:%S')
 
-                    self.gateway.onOrder(order)
+                    if order.status == STATUS_ALLTRADED:
+                        order.vtTradeID =  '.'.join([self.gatewayName, order.orderID])
+                        self.gateway.onTrade(order)
+                    else:
+                        self.gateway.onOrder(order)
                     #self.orderDict[d['order_id']] = order
             except Exception as e:
                 print('Exception')
