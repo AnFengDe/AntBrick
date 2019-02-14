@@ -16,7 +16,7 @@ from vnpy.trader.uiQt import QtGui, QtWidgets, QtCore, BASIC_FONT
 
 COLOR_RED = QtGui.QColor('red')
 COLOR_GREEN = QtGui.QColor('green')
-
+import numpy as np
 
 ########################################################################
 class BasicCell(QtWidgets.QTableWidgetItem):
@@ -29,7 +29,7 @@ class BasicCell(QtWidgets.QTableWidgetItem):
         self.data = None
         
         self.setTextAlignment(QtCore.Qt.AlignCenter)
-        
+
         if text:
             self.setContent(text)
     
@@ -423,18 +423,19 @@ class BasicMonitor(QtWidgets.QTableWidget):
 class MarketMonitor(BasicMonitor):
     """市场监控组件"""
 
+
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine, parent=None):
         """Constructor"""
         super(MarketMonitor, self).__init__(mainEngine, eventEngine, parent)
-        
+        np.set_printoptions(suppress=True)
         # 设置表头有序字典
         d = OrderedDict()
         d['gatewayName'] = {'chinese':vtText.GATEWAY, 'cellType':BasicCell}
         d['symbol'] = {'chinese':vtText.CONTRACT_SYMBOL, 'cellType':BasicCell}
         d['lastPrice'] = {'chinese':vtText.LAST_PRICE, 'cellType':BasicCell}
         d['volume'] = {'chinese':vtText.VOLUME, 'cellType':BasicCell}
-        d['openPrice'] = {'chinese':vtText.OPEN_PRICE, 'cellType':BasicCell}
+        #d['openPrice'] = {'chinese':vtText.OPEN_PRICE, 'cellType':BasicCell}
         d['highPrice'] = {'chinese':vtText.HIGH_PRICE, 'cellType':BasicCell}
         d['lowPrice'] = {'chinese':vtText.LOW_PRICE, 'cellType':BasicCell}
         d['bidPrice1'] = {'chinese':vtText.BID_PRICE_1, 'cellType':BidCell}
@@ -453,7 +454,7 @@ class MarketMonitor(BasicMonitor):
         self.initTable()
         self.registerEvent()
         
-        self.setFixedHeight(400)
+        self.setFixedHeight(300)
 
 
 ########################################################################
@@ -580,7 +581,7 @@ class OrderMonitor(BasicMonitor):
         d['price'] = {'chinese':vtText.PRICE, 'cellType':BasicCell}
         #d['avgprice'] = {'chinese': vtText.AVGPRICE, 'cellType': BasicCell}
         d['volume'] = {'chinese':vtText.ORDER_VOLUME, 'cellType':BasicCell}
-        #d['tradedVolume'] = {'chinese':vtText.TRADED_VOLUME, 'cellType':BasicCell}
+        d['tradedVolume'] = {'chinese':vtText.TRADED_VOLUME, 'cellType':BasicCell}
         d['status'] = {'chinese':vtText.ORDER_STATUS, 'cellType':BasicCell}
         d['orderTime'] = {'chinese':vtText.ORDER_TIME, 'cellType':BasicCell}
         self.setHeaderDict(d)
