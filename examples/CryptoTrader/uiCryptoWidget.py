@@ -1129,9 +1129,9 @@ class TradingWidget(QtWidgets.QFrame):
         vbox.addLayout(gridButton)
         
         hbox = QtWidgets.QHBoxLayout()
+        hbox.addLayout(vbox)  # 下单部分居中
         hbox.addWidget(self.depthMonitor)
         hbox.addWidget(self.dealsMonitor)
-        hbox.addLayout(vbox)  # 下单部分在右上角
 
         self.setLayout(hbox)
 
