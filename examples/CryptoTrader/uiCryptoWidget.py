@@ -517,13 +517,15 @@ class TradeMonitor(BasicMonitor):
         d['direction'] = {'chinese':vtText.DIRECTION, 'cellType':DirectionCell}
         d['price'] = {'chinese':vtText.PRICE, 'cellType':BasicCell}
         d['avgprice'] = {'chinese': vtText.AVGPRICE, 'cellType': BasicCell}
-        d['volume'] = {'chinese':vtText.VOLUME, 'cellType':BasicCell}
+        d['volume'] = {'chinese':vtText.ORDER_VOLUME, 'cellType':BasicCell}
+        d['tradedVolume'] = {'chinese':vtText.TRADED_VOLUME, 'cellType':BasicCell}
+        d['tradedVolume'] = {'chinese': vtText.VOLUME, 'cellType': BasicCell}
         d['orderTime'] = {'chinese':vtText.ORDER_TIME, 'cellType':BasicCell}
         self.setHeaderDict(d)
         
         self.setEventType(EVENT_TRADE)
         self.setFont(BASIC_FONT)
-        self.setSorting(True)
+        #self.setSorting(True)
         self.setResizeMode(QtWidgets.QHeaderView.Stretch)
         
         self.initTable()
