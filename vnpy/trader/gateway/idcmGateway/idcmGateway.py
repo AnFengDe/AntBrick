@@ -98,7 +98,7 @@ def getErrMsg(errcode):
     msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsg)
     self.gateway.writeLog(msg)
 
-
+"""
 # input idcm_sub_spot_BTC-USDT_depth_5
 # output BTC-USDT
 def getSymbolFromChannel(channel):
@@ -106,6 +106,7 @@ def getSymbolFromChannel(channel):
     start += len("spot_")
     end = channel.find("_", start)
     return channel[start:end]
+"""
 
 
 class IdcmGateway(VtGateway):
@@ -267,7 +268,7 @@ class IdcmRestApi(RestClient):
         self.orderBufDict = {}
         self.tickDict = {}
 
-        self.queryAccountThread = None
+        #self.queryAccountThread = None
 
     # ----------------------------------------------------------------------
     def sign(self, request):
@@ -304,8 +305,9 @@ class IdcmRestApi(RestClient):
         #self.queryTicker()
         #self.reqThread = Thread(target=self.queryAccount)
         #self.reqThread.start()
-        self.queryHistoryOrder()
         self.queryAccount()
+        self.queryHistoryOrder()
+
 
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
@@ -415,7 +417,7 @@ class IdcmRestApi(RestClient):
                 'Symbol': symbol,
                 "PageIndex": 1,  # 当前页数
                 "PageSize": 200,  # 每页数据条数，最多不超过200
-                "Status": orderStatusMap[STATUS_ALLTRADED]  # 未成交
+                "Status": orderStatusMap[STATUS_ALLTRADED]  # 成交
             }
             self.addRequest('POST', path, data=req,
                             callback=self.onQueryHistoryOrder)
@@ -722,7 +724,7 @@ class WebsocketApi(IdcmWebsocketApi):
                 else:
                     self.gateway.writeLog("login error ", data["Errorcode"])
         elif 'channel' in data:
-            print(data)
+            #print(data)
             if 'depth' in data['channel']:
                 self.onDepth(data)
             elif 'ticker' in data['channel']:
@@ -768,7 +770,7 @@ class WebsocketApi(IdcmWebsocketApi):
             print(e)
 
     def subscribe(self):
-        #l = []
+        # 初始化
         for symbol in self.symbols:
             #l.append('ticker.' + symbol)
             #l.append('depth.L20.' + symbol)
