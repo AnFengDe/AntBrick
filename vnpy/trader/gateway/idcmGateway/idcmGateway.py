@@ -302,10 +302,10 @@ class IdcmRestApi(RestClient):
         self.init(REST_HOST)
         self.start(sessionCount)
         #self.queryTicker()
-        self.reqThread = Thread(target=self.queryAccount)
-        self.reqThread.start()
+        #self.reqThread = Thread(target=self.queryAccount)
+        #self.reqThread.start()
         self.queryHistoryOrder()
-        #self.queryAccount()
+        self.queryAccount()
 
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
@@ -372,10 +372,10 @@ class IdcmRestApi(RestClient):
     # ----------------------------------------------------------------------
     def queryAccount(self):
         """"""
-        while self._active:
-            self.addRequest('POST', '/api/v1/getuserinfo', data="1",
-                            callback=self.onQueryAccount)
-            time.sleep(5)  # 每隔5秒刷新账户信息
+        #while self._active:
+        self.addRequest('POST', '/api/v1/getuserinfo', data="1",
+                        callback=self.onQueryAccount)
+            #time.sleep(5)  # 每隔5秒刷新账户信息
 
     def queryOrder(self):
         """"""
@@ -717,16 +717,20 @@ class WebsocketApi(IdcmWebsocketApi):
             if data['Event'] == "login":
                 if data["Result"]:
                     # 连接成功,开始订阅
+                    #return
                     self.subscribe()
                 else:
                     self.gateway.writeLog("login error ", data["Errorcode"])
         elif 'channel' in data:
+            print(data)
             if 'depth' in data['channel']:
                 self.onDepth(data)
             elif 'ticker' in data['channel']:
                 self.onTick(data)
             elif 'deals' in data['channel']:
                 self.onDeals(data)
+            elif 'balance' in data['channel']:
+                self.onBalance(data)
 
     # ----------------------------------------------------------------------
     def onDisconnected(self):
@@ -742,18 +746,6 @@ class WebsocketApi(IdcmWebsocketApi):
         callback = self.callbackDict.get(channel, None)
         if callback:
             callback(d)
-
-    """
-    def onError(self, exceptionType, exceptionValue, tb):
-        #Python错误回调
-        e = VtErrorData()
-        e.gatewayName = self.gatewayName
-        e.errorID = exceptionType
-        e.errorMsg = exceptionValue
-        self.gateway.onError(e)
-
-        sys.stderr.write(self.exceptionDetail(exceptionType, exceptionValue, tb))
-    """
 
     @staticmethod
     def sign(apiKey, secretkey):
@@ -818,7 +810,7 @@ class WebsocketApi(IdcmWebsocketApi):
         """"""
         data = d['data']
 
-        symbol = getSymbolFromChannel(d['channel'])
+        symbol = d['channel'].split('_')[3]
         tick = self.tickDict[symbol]
         tick.lastPrice = float(data['last'])
         tick.highPrice = float(data['high'])
@@ -831,7 +823,7 @@ class WebsocketApi(IdcmWebsocketApi):
         """"""
         data = d['data'][0]
 
-        symbol = getSymbolFromChannel(d['channel'])
+        symbol = d['channel'].split('_')[3]
         deal = self.dealDict[symbol]
         deal.lastPrice = float(data['price'])
         deal.volume = float(data['amount'])
@@ -846,7 +838,7 @@ class WebsocketApi(IdcmWebsocketApi):
     # ----------------------------------------------------------------------
     def onDepth(self, d):
         try:
-            symbol = getSymbolFromChannel(d['channel'])
+            symbol = d['channel'].split('_')[3]
             tick = self.tickDict[symbol]
 
             bids = d['data']['bids']
@@ -884,6 +876,18 @@ class WebsocketApi(IdcmWebsocketApi):
             self.gateway.onTick(copy(tick))
         except Exception as e:
             print(e)
+
+    def onBalance(self, d):
+        currency = d['channel'].split('_')[3]  # format:idcm_sub_spot_ETH_balance
+        account = self.accountDict.get(currency, None)
+
+        data = d['data']
+        account.available = float(data['free'])
+        account.margin = float(data['freezed'])
+
+        account.balance = account.margin + account.available
+
+        self.gateway.onAccount(account)
 
     """
     # ----------------------------------------------------------------------
@@ -939,21 +943,6 @@ class WebsocketApi(IdcmWebsocketApi):
             trade.tradeTime = datetime.now().strftime('%H:%M:%S')
             self.gateway.onTrade(trade)
 
-    # ----------------------------------------------------------------------
-    def onAccount(self, d):
-        """"""
-        data = d['data']
-        currency = data['symbol'].split('_')[0]
-
-        account = VtAccountData()
-        account.gatewayName = self.gatewayName
-        account.accountID = currency
-        account.vtAccountID = '.'.join([self.gatewayName, account.accountID])
-
-        account.balance = data['balance']
-        account.available = data['balance'] - data['keep_deposit']
-
-        self.gateway.onAccount(account)
 
     # ----------------------------------------------------------------------
     def onPosition(self, d):
