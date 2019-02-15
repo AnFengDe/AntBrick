@@ -232,6 +232,42 @@ class IdcmGateway(VtGateway):
         self.restApi.queryAccount()
         #self.restApi.queryPosition()
 
+    def processQueueOrder(self, data, historyFlag):
+        for d in data['data']:
+            # self.gateway.localID += 1
+            # localID = str(self.gateway.localID)
+
+            order = VtOrderData()
+            order.gatewayName = self.gatewayName
+
+            order.symbol = d['symbol']
+            order.exchange = 'IDCM'
+            order.vtSymbol = '.'.join([order.symbol, order.exchange])
+
+            order.orderID = d['orderid']
+            # order.vtOrderID = '.'.join([self.gatewayName, localID])
+            order.vtOrderID = '.'.join([self.gatewayName, order.orderID])
+
+            order.price = float(d['price'])  # 委托价格
+            order.avgprice = float(d['avgprice'])  # 平均成交价
+            order.volume = float(d['amount']) + float(d['executedamount'])  # 委托数量
+            order.tradedVolume = float(d['executedamount'])  # 成交数量
+            order.status = orderStatusMapReverse[d['status']]  # 订单状态
+            order.direction = directionMapReverse[d['side']]  # 交易方向   0 买入 1 卖出
+            order.orderType = orderTypeMapReverse[d['type']]  # 订单类型  0	市场价  1	 限价
+
+            dt = datetime.fromtimestamp(d['timestamp'])
+            order.orderTime = dt.strftime('%Y-%m-%d %H:%M:%S')
+
+            if order.status == STATUS_ALLTRADED:
+                # order.vtTradeID =  '.'.join([self.gatewayName, order.orderID])
+                if historyFlag:
+                    self.onTrade(order)
+                else:
+                    self.onOrder(order)  # 普通推送更新委托列表
+            else:
+                self.onOrder(order)
+
     def writeLog(self, msg):
         """"""
         log = VtLogData()
@@ -308,7 +344,6 @@ class IdcmRestApi(RestClient):
         self.queryAccount()
         self.queryHistoryOrder()
 
-
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
         try:
@@ -338,7 +373,7 @@ class IdcmRestApi(RestClient):
             order.direction = orderReq.direction
             order.ordertType = orderReq.orderType
             order.price = orderReq.price
-            order.volume = orderReq.volume
+            order.amount = orderReq.volume
             #order.localID = localID
             # order.totalVolume = orderReq.volume * orderReq.price
             order.status = STATUS_UNKNOWN
@@ -390,7 +425,7 @@ class IdcmRestApi(RestClient):
             self.addRequest('POST', path, data=req,
                             callback=self.onQueryOrder)
 
-    # 获取IDCM历史订单信息，只返回最近两天的信息
+    # 获取IDCM历史订单信息，只返回最近7天的信息
     def queryHistoryOrder(self):
         """"""
         path = '/api/v1/gethistoryorder'
@@ -422,29 +457,6 @@ class IdcmRestApi(RestClient):
             self.addRequest('POST', path, data=req,
                             callback=self.onQueryHistoryOrder)
         self.gateway.writeLog(u'历史订单查询成功')
-
-    # 获取IDCM最新币币行情数据
-    """
-    def onqueryTicker(self, data, request):
-        if data['result'] == 1:
-            symbol = json.loads(request.data)['Symbol']
-            tick = VtTickData()
-            self.tickDict[symbol] = tick
-            tick.gatewayName = self.gatewayName
-            tick.symbol = symbol
-            tick.exchange = "IDCM"
-            #tick.openPrice = data.data[]
-            tick.highPrice = data['data']['high']
-            tick.lowPrice = data['data']['low']
-            tick.lastPrice = data['data']['last']
-            tick.volume = data['data']['vol']
-        else:
-            try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
-            except Exception as e:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
-            self.gateway.writeLog(msg)
-    """
 
     def onQueryAccount(self, data, request):
         """"""
@@ -526,52 +538,16 @@ class IdcmRestApi(RestClient):
             except Exception as e:
                 msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
-            return
 
     def onQueryHistoryOrder(self, data, request):
         if data['result'] == 1:
-            try:
-                for d in data['data']:
-                    self.gateway.localID += 1
-                    localID = str(self.gateway.localID)
-
-                    order = VtOrderData()
-                    order.gatewayName = self.gatewayName
-
-                    order.symbol = d['symbol']
-                    order.exchange = 'IDCM'
-                    order.vtSymbol = '.'.join([order.symbol, order.exchange])
-
-                    order.orderID = d['orderid']
-                    order.vtOrderID = '.'.join([self.gatewayName, localID])
-
-                    order.price = float(d['price'])  # 委托价格
-                    order.avgprice = float(d['avgprice'])  # 平均成交价
-                    order.volume = float(d['amount'])  # 委托数量
-                    order.tradedVolume = float(d['executedamount'])  # 成交数量
-                    order.status = orderStatusMapReverse[d['status']]  # 订单状态
-                    order.direction = directionMapReverse[d['side']]   # 交易方向   0 买入 1 卖出
-                    order.orderType = orderTypeMapReverse[d['type']]  # 订单类型  0	市场价  1	 限价
-
-                    dt = datetime.fromtimestamp(d['timestamp'])
-                    order.orderTime = dt.strftime('%Y-%m-%d %H:%M:%S')
-
-                    if order.status == STATUS_ALLTRADED:
-                        order.vtTradeID =  '.'.join([self.gatewayName, order.orderID])
-                        self.gateway.onTrade(order)
-                    else:
-                        self.gateway.onOrder(order)
-                    #self.orderDict[d['order_id']] = order
-            except Exception as e:
-                print('Exception')
-                print(e)
+            self.gateway.processQueueOrder(data, historyFlag=1)
         else:
             try:
                 msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
             except Exception as e:
                 msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
-            return
 
     # ----------------------------------------------------------------------
     def onSendOrderFailed(self, data, request):
@@ -611,6 +587,7 @@ class IdcmRestApi(RestClient):
 
             self.localOrderDict[localID] = strOrderID
             order.orderID = strOrderID  # 服务器返回orderid写入order
+            order.vtOrderID = '.'.join([self.gatewayName, order.orderID])  # 本地队列索引
             self.orderDict[strOrderID] = order
             self.gateway.onOrder(order)
 
@@ -719,12 +696,12 @@ class WebsocketApi(IdcmWebsocketApi):
             if data['Event'] == "login":
                 if data["Result"]:
                     # 连接成功,开始订阅
-                    #return
+                    # return
                     self.subscribe()
                 else:
                     self.gateway.writeLog("login error ", data["Errorcode"])
         elif 'channel' in data:
-            #print(data)
+            # print(data)
             if 'depth' in data['channel']:
                 self.onDepth(data)
             elif 'ticker' in data['channel']:
@@ -733,6 +710,11 @@ class WebsocketApi(IdcmWebsocketApi):
                 self.onDeals(data)
             elif 'balance' in data['channel']:
                 self.onBalance(data)
+            elif 'order' in data['channel']:
+                self.onOrder(data)
+
+    def onOrder(self, data):
+        self.gateway.processQueueOrder(data, historyFlag=0)
 
     # ----------------------------------------------------------------------
     def onDisconnected(self):
