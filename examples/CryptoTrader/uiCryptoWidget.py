@@ -25,7 +25,7 @@ class BasicCell(QtWidgets.QTableWidgetItem):
     #----------------------------------------------------------------------
     def __init__(self, text=None, mainEngine=None):
         """Constructor"""
-        super(BasicCell, self).__init__()
+        super().__init__()
         self.data = None
         
         self.setTextAlignment(QtCore.Qt.AlignCenter)
@@ -49,7 +49,7 @@ class NumCell(BasicCell):
     #----------------------------------------------------------------------
     def __init__(self, text=None, mainEngine=None):
         """Constructor"""
-        super(NumCell, self).__init__(text)
+        super().__init__(text)
         
     #----------------------------------------------------------------------
     def setContent(self, text):
@@ -71,7 +71,7 @@ class DirectionCell(BasicCell):
     #----------------------------------------------------------------------
     def __init__(self, text=None, mainEngine=None):
         """Constructor"""
-        super(DirectionCell, self).__init__(text)
+        super().__init__(text)
         
     #----------------------------------------------------------------------
     def setContent(self, text):
@@ -90,7 +90,7 @@ class NameCell(BasicCell):
     #----------------------------------------------------------------------
     def __init__(self, text=None, mainEngine=None):
         """Constructor"""
-        super(NameCell, self).__init__()
+        super().__init__()
         
         self.mainEngine = mainEngine
         self.data = None
@@ -117,7 +117,7 @@ class BidCell(BasicCell):
     #----------------------------------------------------------------------
     def __init__(self, text=None, mainEngine=None):
         """Constructor"""
-        super(BidCell, self).__init__(text)
+        super().__init__(text)
         
         self.setForeground(QtGui.QColor('black'))
         self.setBackground(QtGui.QColor(160, 255, 160))
@@ -135,7 +135,7 @@ class AskCell(BasicCell):
     #----------------------------------------------------------------------
     def __init__(self, text=None, mainEngine=None):
         """Constructor"""
-        super(AskCell, self).__init__(text)
+        super().__init__(text)
         
         self.setForeground(QtGui.QColor('black'))
         self.setBackground(QtGui.QColor(255, 174, 201))
@@ -153,7 +153,7 @@ class PnlCell(BasicCell):
     #----------------------------------------------------------------------
     def __init__(self, text=None, mainEngine=None):
         """Constructor"""
-        super(PnlCell, self).__init__()
+        super().__init__()
         self.data = None
         self.color = ''
         if text:
@@ -190,7 +190,7 @@ class BasicMonitor(QtWidgets.QTableWidget):
     #----------------------------------------------------------------------
     def __init__(self, mainEngine=None, eventEngine=None, parent=None):
         """Constructor"""
-        super(BasicMonitor, self).__init__(parent)
+        super().__init__(parent)
         
         self.mainEngine = mainEngine
         self.eventEngine = eventEngine
@@ -427,7 +427,7 @@ class MarketMonitor(BasicMonitor):
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine, parent=None):
         """Constructor"""
-        super(MarketMonitor, self).__init__(mainEngine, eventEngine, parent)
+        super().__init__(mainEngine, eventEngine, parent)
         np.set_printoptions(suppress=True)
         # 设置表头有序字典
         d = OrderedDict()
@@ -465,7 +465,7 @@ class LogMonitor(BasicMonitor):
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine, parent=None):
         """Constructor"""
-        super(LogMonitor, self).__init__(mainEngine, eventEngine, parent)
+        super().__init__(mainEngine, eventEngine, parent)
         
         d = OrderedDict()        
         d['gatewayName'] = {'chinese':vtText.GATEWAY, 'cellType':BasicCell}
@@ -507,7 +507,7 @@ class TradeMonitor(BasicMonitor):
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine, parent=None):
         """Constructor"""
-        super(TradeMonitor, self).__init__(mainEngine, eventEngine, parent)
+        super().__init__(mainEngine, eventEngine, parent)
         
         d = OrderedDict()
         d['gatewayName'] = {'chinese':vtText.GATEWAY, 'cellType':BasicCell}
@@ -539,7 +539,7 @@ class DealsMonitor(BasicMonitor):
     # ----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine, parent=None):
         """Constructor"""
-        super(DealsMonitor, self).__init__(mainEngine, eventEngine, parent)
+        super().__init__(mainEngine, eventEngine, parent)
 
         self.mainEngine = mainEngine
 
@@ -571,7 +571,7 @@ class OrderMonitor(BasicMonitor):
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine, parent=None):
         """Constructor"""
-        super(OrderMonitor, self).__init__(mainEngine, eventEngine, parent)
+        super().__init__(mainEngine, eventEngine, parent)
 
         self.mainEngine = mainEngine
         
@@ -626,7 +626,7 @@ class PositionMonitor(BasicMonitor):
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine, parent=None):
         """Constructor"""
-        super(PositionMonitor, self).__init__(mainEngine, eventEngine, parent)
+        super().__init__(mainEngine, eventEngine, parent)
         
         d = OrderedDict()
         d['gatewayName'] = {'chinese':vtText.GATEWAY, 'cellType':BasicCell}
@@ -654,7 +654,7 @@ class AccountMonitor(BasicMonitor):
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine, parent=None):
         """Constructor"""
-        super(AccountMonitor, self).__init__(mainEngine, eventEngine, parent)
+        super().__init__(mainEngine, eventEngine, parent)
         
         d = OrderedDict()
         d['gatewayName'] = {'chinese':vtText.GATEWAY, 'cellType':BasicCell}
@@ -675,7 +675,7 @@ class AccountMonitor(BasicMonitor):
     #----------------------------------------------------------------------
     def updateData(self, data):
         """更新数据"""
-        super(AccountMonitor, self).updateData(data)
+        super().updateData(data)
 
         # 如果该委托已完成，则隐藏该行
         vtAccountID = data.vtAccountID
@@ -696,7 +696,7 @@ class DepthMonitor(QtWidgets.QTableWidget):
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine):
         """Constructor"""
-        super(DepthMonitor, self).__init__()    
+        super().__init__()
         
         self.mainEngine = mainEngine
         
@@ -1010,7 +1010,7 @@ class TradingWidget(QtWidgets.QFrame):
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine, parent=None):
         """Constructor"""
-        super(TradingWidget, self).__init__(parent)
+        super().__init__(parent)
         self.mainEngine = mainEngine
         self.eventEngine = eventEngine
         
@@ -1270,7 +1270,7 @@ class ContractMonitor(BasicMonitor):
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, parent=None):
         """Constructor"""
-        super(ContractMonitor, self).__init__(parent=parent)
+        super().__init__(parent=parent)
         
         self.mainEngine = mainEngine
         
@@ -1346,7 +1346,7 @@ class ContractMonitor(BasicMonitor):
     #----------------------------------------------------------------------
     def show(self):
         """显示"""
-        super(ContractMonitor, self).show()
+        super().show()
         self.refresh()
         
     #----------------------------------------------------------------------
@@ -1362,7 +1362,7 @@ class ContractManager(QtWidgets.QWidget):
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, parent=None):
         """Constructor"""
-        super(ContractManager, self).__init__(parent=parent)
+        super().__init__(parent=parent)
         
         self.mainEngine = mainEngine
         
@@ -1404,7 +1404,7 @@ class KlineManager(QtWidgets.QWidget):
     # ----------------------------------------------------------------------
     def __init__(self, mainEngine, parent=None):
         """Constructor"""
-        super(KlineManager, self).__init__(parent=parent)
+        super().__init__(parent=parent)
 
         self.mainEngine = mainEngine
 
@@ -1448,12 +1448,12 @@ class WorkingOrderMonitor(OrderMonitor):
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine, parent=None):
         """Constructor"""
-        super(WorkingOrderMonitor, self).__init__(mainEngine, eventEngine, parent)
+        super().__init__(mainEngine, eventEngine, parent)
         
     #----------------------------------------------------------------------
     def updateData(self, data):
         """更新数据"""
-        super(WorkingOrderMonitor, self).updateData(data)
+        super().updateData(data)
 
         # 如果该委托已完成，则隐藏该行
         if data.status in self.STATUS_COMPLETED:
@@ -1471,7 +1471,7 @@ class SettingEditor(QtWidgets.QWidget):
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, parent=None):
         """Constructor"""
-        super(SettingEditor, self).__init__(parent)
+        super().__init__(parent)
         
         self.mainEngine = mainEngine
         self.currentFileName = ''
@@ -1546,5 +1546,5 @@ class SettingEditor(QtWidgets.QWidget):
         self.comboFileName.addItems(jsonPathDict.keys())
         
         # 显示界面
-        super(SettingEditor, self).show()
+        super().show()
 
