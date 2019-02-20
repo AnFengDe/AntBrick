@@ -18,7 +18,7 @@ class MainWindow(QtWidgets.QMainWindow):
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine):
         """Constructor"""          
-        super(MainWindow, self).__init__()
+        super().__init__()
         
         self.mainEngine = mainEngine
         self.eventEngine = eventEngine
@@ -74,7 +74,7 @@ class MainWindow(QtWidgets.QMainWindow):
         gatewayDetails = self.mainEngine.getAllGatewayDetails()
         
         sysMenu = menubar.addMenu(vtText.SYSTEM)
-        
+        """
         for d in gatewayDetails:
             if d['gatewayType'] == GATEWAYTYPE_FUTURES:
                 self.addConnectAction(sysMenu, d['gatewayName'], d['gatewayDisplayName'])
@@ -89,16 +89,18 @@ class MainWindow(QtWidgets.QMainWindow):
             if d['gatewayType'] == GATEWAYTYPE_INTERNATIONAL:
                 self.addConnectAction(sysMenu, d['gatewayName'], d['gatewayDisplayName'])       
         sysMenu.addSeparator()
-                
+        """
         for d in gatewayDetails:
             if d['gatewayType'] == GATEWAYTYPE_BTC:
                 self.addConnectAction(sysMenu, d['gatewayName'], d['gatewayDisplayName'])
         sysMenu.addSeparator()
-                
+
+        """        
         for d in gatewayDetails:
             if d['gatewayType'] == GATEWAYTYPE_DATA:
                 self.addConnectAction(sysMenu, d['gatewayName'], d['gatewayDisplayName'])
-        
+        """
+
         sysMenu.addSeparator()
         sysMenu.addAction(self.createAction(vtText.CONNECT_DATABASE, self.mainEngine.dbConnect, loadIconPath('database.ico')))
         sysMenu.addSeparator()
@@ -304,7 +306,7 @@ class AboutWidget(QtWidgets.QDialog):
     #----------------------------------------------------------------------
     def __init__(self, parent=None):
         """Constructor"""
-        super(AboutWidget, self).__init__(parent)
+        super().__init__(parent)
 
         self.initUi()
 
