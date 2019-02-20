@@ -1,0 +1,11 @@
+{
+	"gateway": "idcm",
+	"symbol": ["FCS-USDT"],
+	"symbolBasicPrice": 0.1,
+	"btcBasicPrice": 3000,
+	"orderLevel": 10,
+	"orderPriceGap": 0.01,
+	"orderVolume": 1000,
+	"btcCheckInterval": 5,
+	"placeOrderInterval": 5
+}
