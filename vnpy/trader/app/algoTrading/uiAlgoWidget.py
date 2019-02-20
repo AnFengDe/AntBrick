@@ -12,7 +12,7 @@ class AlgoWidget(QtWidgets.QFrame):
     #----------------------------------------------------------------------
     def __init__(self, algoEngine, parent=None):
         """Constructor"""
-        super(AlgoWidget, self).__init__(parent)
+        super().__init__(parent)
         
         self.templateName = ''
         self.algoEngine = algoEngine
