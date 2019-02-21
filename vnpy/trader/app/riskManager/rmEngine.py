@@ -40,17 +40,18 @@ class RmEngine(object):
         # 是否启动风控
         self.active = False
 
+        self.orderFlowClear = EMPTY_INT  # 计数清空时间（秒）
+        self.orderFlowTimer = EMPTY_INT     # 计数清空时间计时
+        """
         # 流控相关
         self.orderFlowCount = EMPTY_INT     # 单位时间内委托计数
         self.orderFlowLimit = EMPTY_INT     # 委托限制
-        self.orderFlowClear = EMPTY_INT     # 计数清空时间（秒）
-        self.orderFlowTimer = EMPTY_INT     # 计数清空时间计时
-
+                
         # 单笔委托相关
         self.orderSizeLimit = EMPTY_INT     # 单笔委托最大限制
 
         # 成交统计相关
-        self.tradeCount = EMPTY_INT         # 当日成交合约数量统计
+        self.tradeCount = EMPTY_INT         # 当日成交数量统计
         self.tradeLimit = EMPTY_INT         # 当日成交合约数量限制
 
         # 单品种撤单统计
@@ -59,10 +60,12 @@ class RmEngine(object):
 
         # 活动合约相关
         self.workingOrderLimit = EMPTY_INT  # 活动合约最大限制
-        
         # 保证金相关
         self.marginRatioDict = {}           # 保证金占账户净值比例字典
         self.marginRatioLimit = EMPTY_FLOAT # 最大比例限制
+        """
+        self.settingsDict = {}
+        self.accountAvailable = {}  # 每个账户最新可用余额
 
         self.loadSetting()
         self.registerEvent()
@@ -74,26 +77,29 @@ class RmEngine(object):
             d = json.load(f)
 
             # 设置风控参数
-            self.active = d['active']
+            #self.active = d['active']
+            #self.warnLimit = d['warnLimit']  # 报警值
 
+            #self.symbolSettingDict=[]  # 交易对阈值
+
+            """
             self.orderFlowLimit = d['orderFlowLimit']
             self.orderFlowClear = d['orderFlowClear']
-
             self.orderSizeLimit = d['orderSizeLimit']
-
             self.tradeLimit = d['tradeLimit']
-
             self.workingOrderLimit = d['workingOrderLimit']
-
-            self.orderCancelLimit = d['orderCancelLimit']
-            
+            self.orderCancelLimit = d['orderCancelLimit']           
             self.marginRatioLimit = d['marginRatioLimit']
+            """
+            for key in d.keys():
+                self.settingsDict[key] = d[key]
 
     #----------------------------------------------------------------------
     def saveSetting(self):
         """保存风控参数"""
         with open(self.settingFilePath, 'w') as f:
             # 保存风控参数
+            """
             d = {}
 
             d['active'] = self.active
@@ -110,17 +116,19 @@ class RmEngine(object):
             d['orderCancelLimit'] = self.orderCancelLimit
             
             d['marginRatioLimit'] = self.marginRatioLimit
+            """
 
             # 写入json
-            jsonD = json.dumps(d, indent=4)
+            jsonD = json.dumps(self.settingsDict, indent=4)
+            #jsonD = json.dumps(d, indent=4)
             f.write(jsonD)
 
     #----------------------------------------------------------------------
     def registerEvent(self):
         """注册事件监听"""
-        self.eventEngine.register(EVENT_TRADE, self.updateTrade)
+        #self.eventEngine.register(EVENT_TRADE, self.updateTrade)
         self.eventEngine.register(EVENT_TIMER, self.updateTimer)
-        self.eventEngine.register(EVENT_ORDER, self.updateOrder)
+        #self.eventEngine.register(EVENT_ORDER, self.updateOrder)
         self.eventEngine.register(EVENT_ACCOUNT, self.updateAccount)
         
     #----------------------------------------------------------------------
@@ -156,14 +164,14 @@ class RmEngine(object):
     def updateAccount(self, event):
         """账户资金更新"""
         account = event.dict_['data']
-        
-        # 计算保证金占比
-        ratio = 0
-        if account.balance:
-            ratio = account.margin / account.balance
+
+        def prn_obj(obj):
+            print(', '.join(['%s:%s' % item for item in obj.__dict__.items()]))
+            #print('\n')
+        #prn_obj(account)
         
         # 更新到字典中
-        self.marginRatioDict[account.gatewayName] = ratio
+        self.accountAvailable[account.vtAccountID] = account.available
 
     #----------------------------------------------------------------------
     def writeRiskLog(self, content):

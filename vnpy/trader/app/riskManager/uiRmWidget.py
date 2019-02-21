@@ -45,7 +45,7 @@ class RmEngineManager(QtWidgets.QWidget):
     #----------------------------------------------------------------------
     def __init__(self, rmEngine, eventEngine, parent=None):
         """Constructor"""
-        super(RmEngineManager, self).__init__(parent)
+        super().__init__(parent)
         
         self.rmEngine = rmEngine
         self.eventEngine = eventEngine
@@ -60,7 +60,12 @@ class RmEngineManager(QtWidgets.QWidget):
         
         # 设置界面
         self.buttonSwitchEngineStatus = QtWidgets.QPushButton(text.RISK_MANAGER_STOP)
-        
+        self.comboVtSymbol = QtWidgets.QComboBox()
+        for key in self.rmEngine.settingsDict.keys():
+            if '.' in key:
+                self.comboVtSymbol.addItem(key)
+
+        """
         self.spinOrderFlowLimit = RmSpinBox(self.rmEngine.orderFlowLimit)
         self.spinOrderFlowClear = RmSpinBox(self.rmEngine.orderFlowClear)
         self.spinOrderSizeLimit = RmSpinBox(self.rmEngine.orderSizeLimit)
@@ -72,6 +77,7 @@ class RmEngineManager(QtWidgets.QWidget):
         self.spinMarginRatioLimit.setMaximum(100)   
         self.spinMarginRatioLimit.setSuffix('%')
         
+        """
         buttonClearOrderFlowCount = QtWidgets.QPushButton(text.CLEAR_ORDER_FLOW_COUNT)
         buttonClearTradeCount = QtWidgets.QPushButton(text.CLEAR_TOTAL_FILL_COUNT)
         buttonSaveSetting = QtWidgets.QPushButton(text.SAVE_SETTING)
@@ -80,6 +86,11 @@ class RmEngineManager(QtWidgets.QWidget):
         grid = QtWidgets.QGridLayout()
         grid.addWidget(Label(text.WORKING_STATUS), 0, 0)
         grid.addWidget(self.buttonSwitchEngineStatus, 0, 1)
+        grid.addWidget(Label(u'代币代码'), 1, 0)
+        grid.addWidget(self.comboVtSymbol, 1, 1)
+        grid.addWidget(Label(u'账户余额预警值'), 2, 0)
+        grid.addWidget(Label(u'账户余额最低值'), 3, 0)
+        """
         grid.addWidget(RmLine(), 1, 0, 1, 2)
         grid.addWidget(Label(text.ORDER_FLOW_LIMIT), 2, 0)
         grid.addWidget(self.spinOrderFlowLimit, 2, 1)
@@ -100,7 +111,7 @@ class RmEngineManager(QtWidgets.QWidget):
         grid.addWidget(RmLine(), 12, 0, 1, 2)
         grid.addWidget(Label(text.MARGIN_RATIO_LIMIT), 13, 0)
         grid.addWidget(self.spinMarginRatioLimit, 13, 1)        
-        
+        """
         hbox = QtWidgets.QHBoxLayout()
         hbox.addWidget(buttonClearOrderFlowCount)
         hbox.addWidget(buttonClearTradeCount)
@@ -113,6 +124,7 @@ class RmEngineManager(QtWidgets.QWidget):
         self.setLayout(vbox)
         
         # 连接组件信号
+        """
         self.spinOrderFlowLimit.valueChanged.connect(self.rmEngine.setOrderFlowLimit)
         self.spinOrderFlowClear.valueChanged.connect(self.rmEngine.setOrderFlowClear)
         self.spinOrderSizeLimit.valueChanged.connect(self.rmEngine.setOrderSizeLimit)
@@ -120,10 +132,11 @@ class RmEngineManager(QtWidgets.QWidget):
         self.spinWorkingOrderLimit.valueChanged.connect(self.rmEngine.setWorkingOrderLimit)
         self.spinOrderCancelLimit.valueChanged.connect(self.rmEngine.setOrderCancelLimit)
         self.spinMarginRatioLimit.valueChanged.connect(self.rmEngine.setMarginRatioLimit)
-
-        self.buttonSwitchEngineStatus.clicked.connect(self.switchEngineSatus)
+        
+        """
         buttonClearOrderFlowCount.clicked.connect(self.rmEngine.clearOrderFlowCount)
         buttonClearTradeCount.clicked.connect(self.rmEngine.clearTradeCount)
+        self.buttonSwitchEngineStatus.clicked.connect(self.switchEngineSatus)
         buttonSaveSetting.clicked.connect(self.rmEngine.saveSetting)
         
         # 设为固定大小
