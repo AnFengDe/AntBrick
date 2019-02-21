@@ -1021,12 +1021,12 @@ class TradingWidget(QtWidgets.QFrame):
         gatewayNameList = [d['gatewayName'] for d in l]
         self.gatewayList.extend(gatewayNameList)
 
-        self.initUi()
-        self.registerEvent()
         self.fullSymbols = []  # 所有交易所的全部交易对
-
         # 读取交易对信息
         self.load_symbols()
+
+        self.initUi()
+        self.registerEvent()
 
     def load_symbols(self):
         """从硬盘读取交易对对象"""
@@ -1134,6 +1134,8 @@ class TradingWidget(QtWidgets.QFrame):
         hbox.addWidget(self.dealsMonitor)
 
         self.setLayout(hbox)
+
+        self.updateSymbolForGateway()  # 获取当前交易所的交易对信息
 
         # 关联更新
         self.comboGateway.currentIndexChanged.connect(self.updateSymbolForGateway)  # 根据交易所变化选择交易对
