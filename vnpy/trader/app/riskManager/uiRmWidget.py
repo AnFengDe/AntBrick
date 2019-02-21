@@ -65,6 +65,9 @@ class RmEngineManager(QtWidgets.QWidget):
             if '.' in key:
                 self.comboVtSymbol.addItem(key)
 
+        self.lineAccWarnLimit = QtWidgets.QLineEdit()
+        self.lineAccMinLimit = QtWidgets.QLineEdit()
+
         """
         self.spinOrderFlowLimit = RmSpinBox(self.rmEngine.orderFlowLimit)
         self.spinOrderFlowClear = RmSpinBox(self.rmEngine.orderFlowClear)
@@ -78,8 +81,8 @@ class RmEngineManager(QtWidgets.QWidget):
         self.spinMarginRatioLimit.setSuffix('%')
         
         """
-        buttonClearOrderFlowCount = QtWidgets.QPushButton(text.CLEAR_ORDER_FLOW_COUNT)
-        buttonClearTradeCount = QtWidgets.QPushButton(text.CLEAR_TOTAL_FILL_COUNT)
+        #buttonClearOrderFlowCount = QtWidgets.QPushButton(text.CLEAR_ORDER_FLOW_COUNT)
+        #buttonClearTradeCount = QtWidgets.QPushButton(text.CLEAR_TOTAL_FILL_COUNT)
         buttonSaveSetting = QtWidgets.QPushButton(text.SAVE_SETTING)
         
         Label = QtWidgets.QLabel
@@ -89,7 +92,13 @@ class RmEngineManager(QtWidgets.QWidget):
         grid.addWidget(Label(u'代币代码'), 1, 0)
         grid.addWidget(self.comboVtSymbol, 1, 1)
         grid.addWidget(Label(u'账户余额预警值'), 2, 0)
+        grid.addWidget(self.lineAccWarnLimit, 2, 1)
         grid.addWidget(Label(u'账户余额最低值'), 3, 0)
+        grid.addWidget(self.lineAccMinLimit, 3, 1)
+
+        self.getSettingForVTSymbol()
+        self.comboVtSymbol.currentIndexChanged.connect(self.getSettingForVTSymbol)
+
         """
         grid.addWidget(RmLine(), 1, 0, 1, 2)
         grid.addWidget(Label(text.ORDER_FLOW_LIMIT), 2, 0)
@@ -113,8 +122,8 @@ class RmEngineManager(QtWidgets.QWidget):
         grid.addWidget(self.spinMarginRatioLimit, 13, 1)        
         """
         hbox = QtWidgets.QHBoxLayout()
-        hbox.addWidget(buttonClearOrderFlowCount)
-        hbox.addWidget(buttonClearTradeCount)
+        #hbox.addWidget(buttonClearOrderFlowCount)
+        #hbox.addWidget(buttonClearTradeCount)
         hbox.addStretch()
         hbox.addWidget(buttonSaveSetting)
         
@@ -122,26 +131,35 @@ class RmEngineManager(QtWidgets.QWidget):
         vbox.addLayout(grid)
         vbox.addLayout(hbox)
         self.setLayout(vbox)
-        
+
+
         # 连接组件信号
         """
-        self.spinOrderFlowLimit.valueChanged.connect(self.rmEngine.setOrderFlowLimit)
-        self.spinOrderFlowClear.valueChanged.connect(self.rmEngine.setOrderFlowClear)
-        self.spinOrderSizeLimit.valueChanged.connect(self.rmEngine.setOrderSizeLimit)
-        self.spinTradeLimit.valueChanged.connect(self.rmEngine.setTradeLimit)
         self.spinWorkingOrderLimit.valueChanged.connect(self.rmEngine.setWorkingOrderLimit)
         self.spinOrderCancelLimit.valueChanged.connect(self.rmEngine.setOrderCancelLimit)
-        self.spinMarginRatioLimit.valueChanged.connect(self.rmEngine.setMarginRatioLimit)
-        
+        self.spinMarginRatioLimit.valueChanged.connect(self.rmEngine.setMarginRatioLimit)        
         """
-        buttonClearOrderFlowCount.clicked.connect(self.rmEngine.clearOrderFlowCount)
-        buttonClearTradeCount.clicked.connect(self.rmEngine.clearTradeCount)
-        self.buttonSwitchEngineStatus.clicked.connect(self.switchEngineSatus)
-        buttonSaveSetting.clicked.connect(self.rmEngine.saveSetting)
+        #buttonClearOrderFlowCount.clicked.connect(self.rmEngine.clearOrderFlowCount)
+        #buttonClearTradeCount.clicked.connect(self.rmEngine.clearTradeCount)
+        #self.buttonSwitchEngineStatus.clicked.connect(self.switchEngineSatus)
+        buttonSaveSetting.clicked.connect(self.saveSettingForVTSymbol)
         
         # 设为固定大小
         self.setFixedSize(self.sizeHint())
-        
+
+    def getSettingForVTSymbol(self):
+        """根据交易对读取配置信息"""
+        self.vtSymbol = str(self.comboVtSymbol.currentText())
+        self.lineAccWarnLimit.setText(str(self.rmEngine.settingsDict[self.vtSymbol]['warnLimit']))
+        self.lineAccMinLimit.setText(str(self.rmEngine.settingsDict[self.vtSymbol]['minLimit']))
+
+    def saveSettingForVTSymbol(self):
+        """写入配置信息"""
+        self.rmEngine.settingsDict[self.vtSymbol]['warnLimit'] = self.lineAccWarnLimit.text()
+        self.rmEngine.settingsDict[self.vtSymbol]['minLimit'] = self.lineAccMinLimit.text()
+
+        self.rmEngine.saveSetting()
+
     #----------------------------------------------------------------------
     def switchEngineSatus(self):
         """控制风控引擎开关"""
