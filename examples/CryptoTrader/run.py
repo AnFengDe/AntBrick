@@ -21,10 +21,18 @@ from vnpy.trader.gateway import (huobiGateway, okexGateway, okexfGateway,
                                  #bigoneGateway,
                                  lbankGateway,
                                  coinbaseGateway, ccxtGateway,
+                                 ucoinGateway,
                                  idcmGateway)
 
 # 加载上层应用
-from vnpy.trader.app import (algoTrading)
+from vnpy.trader.app import (algoTrading)  # 算法交易
+from vnpy.trader.app import (riskManager)  # 风控模块
+#from vnpy.trader.app import (dataRecorder)
+#from vnpy.trader.app import (optionMaster)
+#from vnpy.trader.app import (rpcService)
+#from vnpy.trader.app import (rtdService)
+#from vnpy.trader.app import (spreadTrading)
+#from vnpy.trader.app import (tradeCopy)
 
 # 当前目录组件
 from uiCryptoWindow import MainWindow
@@ -43,11 +51,11 @@ def main():
 
     # 添加交易接口
     #me.addGateway(okexfGateway)
-    me.addGateway(ccxtGateway)
-    me.addGateway(coinbaseGateway)
+    #me.addGateway(ccxtGateway)
+    #me.addGateway(coinbaseGateway)
     #me.addGateway(lbankGateway)
     #me.addGateway(bigoneGateway)
-    me.addGateway(fcoinGateway)
+    #me.addGateway(fcoinGateway)
     #me.addGateway(bitmexGateway)
     #me.addGateway(huobiGateway)
     #me.addGateway(okexGateway)
@@ -57,7 +65,14 @@ def main():
     
     # 添加上层应用
     me.addApp(algoTrading)
-    
+    me.addApp(riskManager)
+#    me.addApp(dataRecorder)
+#    me.addApp(optionMaster)
+    #me.addApp(rpcService)
+#    me.addApp(rtdService)
+#    me.addApp(spreadTrading)
+    #me.addApp(tradeCopy)
+
     # 创建主窗口
     mw = MainWindow(me, ee)
     mw.showMaximized()
