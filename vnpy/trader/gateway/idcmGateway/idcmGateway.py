@@ -115,7 +115,7 @@ class IdcmGateway(VtGateway):
     # ----------------------------------------------------------------------
     def __init__(self, eventEngine, gatewayName=''):
         """Constructor"""
-        super(IdcmGateway, self).__init__(eventEngine, gatewayName)
+        super().__init__(eventEngine, gatewayName)
         self.localID = 10000
 
         self.accountDict = {}
@@ -284,7 +284,7 @@ class IdcmRestApi(RestClient):
     # ----------------------------------------------------------------------
     def __init__(self, gateway):
         """Constructor"""
-        super(IdcmRestApi, self).__init__()
+        super().__init__()
 
         self.gateway = gateway  # type: IdcmGateway # gateway对象
         self.gatewayName = gateway.gatewayName  # gateway对象名称
@@ -639,7 +639,7 @@ class IdcmRestApi(RestClient):
 class WebsocketApi(IdcmWebsocketApi):
     def __init__(self, gateway):
         """Constructor"""
-        super(WebsocketApi, self).__init__()
+        super().__init__()
 
         self.gateway = gateway
         self.gatewayName = gateway.gatewayName
