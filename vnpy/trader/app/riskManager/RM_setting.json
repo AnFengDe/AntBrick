@@ -1,10 +1,17 @@
 {
-    "orderFlowClear": 1, 
-    "orderCancelLimit": 10, 
-    "marginRatioLimit": 0.95, 
-    "workingOrderLimit": 20, 
-    "tradeLimit": 1000, 
-    "orderSizeLimit": 100, 
-    "active": false, 
-    "orderFlowLimit": 50
+    "IDCM.FCS": {
+        "active": false,
+        "warnLimit": 150,
+        "stopOrderLimit": 50
+    },
+    "IDCM.ETH": {
+        "active": false,
+        "warnLimit": 150,
+        "stopOrderLimit": 50
+    },
+    "IDCM.USDT": {
+        "active": false,
+        "warnLimit": 150,
+        "stopOrderLimit": 50
+    }
 }
