@@ -98,26 +98,6 @@ class RmEngine(object):
     def saveSetting(self):
         """保存风控参数"""
         with open(self.settingFilePath, 'w') as f:
-            # 保存风控参数
-            """
-            d = {}
-
-            d['active'] = self.active
-
-            d['orderFlowLimit'] = self.orderFlowLimit
-            d['orderFlowClear'] = self.orderFlowClear
-
-            d['orderSizeLimit'] = self.orderSizeLimit
-
-            d['tradeLimit'] = self.tradeLimit
-
-            d['workingOrderLimit'] = self.workingOrderLimit
-
-            d['orderCancelLimit'] = self.orderCancelLimit
-            
-            d['marginRatioLimit'] = self.marginRatioLimit
-            """
-
             # 写入json
             jsonD = json.dumps(self.settingsDict, indent=4)
             #jsonD = json.dumps(d, indent=4)
@@ -197,6 +177,29 @@ class RmEngine(object):
         if not self.active:
             return True
 
+        # 取得需要使用的账户代币名称
+        if orderReq.direction == "卖出":
+            symbol = orderReq.symbol.split('-')[0] # '-'为交易对分割符,可能有其他分隔符
+        else:
+            symbol = orderReq.symbol.split('-')[1]
+        accountIndex = gatewayName + "." + symbol
+
+          # gateway.symbol
+        if accountIndex not in self.settingsDict.keys():
+            self.writeRiskLog(u'账户%s限额配置缺失，请检查，报警' % accountIndex)
+            return False
+
+        if (self.accountAvailable[accountIndex] - orderReq.volume) < float(self.settingsDict[accountIndex]['warnLimit']):
+            self.writeRiskLog(u'账户%s余额低，报警' %accountIndex)
+        if (self.accountAvailable[accountIndex] - orderReq.volume) < float(self.settingsDict[accountIndex]['minLimit']):
+            self.writeRiskLog(u'账户%s余额不足，委托拒绝' %accountIndex)
+            return False
+        # 对于通过风控的委托，增加流控计数
+        self.orderFlowCount += 1
+        self.accountAvailable[accountIndex] -= orderReq.volume  # 通过风控，余额扣减
+        return True
+
+        """
         # 检查委托数量
         if orderReq.volume <= 0:
             self.writeRiskLog(u'委托数量必须大于0')
@@ -237,11 +240,7 @@ class RmEngine(object):
             self.writeRiskLog(u'%s接口保证金占比%s，超过限制%s'
                               %(gatewayName, self.marginRatioDict[gatewayName], self.marginRatioLimit))
             return False
-        
-        # 对于通过风控的委托，增加流控计数
-        self.orderFlowCount += 1
-
-        return True
+        """
 
     #----------------------------------------------------------------------
     def clearOrderFlowCount(self):
