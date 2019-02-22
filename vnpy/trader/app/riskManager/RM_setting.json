@@ -2,16 +2,16 @@
     "IDCM.FCS": {
         "active": false,
         "warnLimit": 150,
-        "stopOrderLimit": 50
+        "minLimit": "232333"
     },
     "IDCM.ETH": {
         "active": false,
-        "warnLimit": 150,
-        "stopOrderLimit": 50
+        "warnLimit": 120,
+        "minLimit": "11"
     },
     "IDCM.USDT": {
         "active": false,
-        "warnLimit": 150,
-        "stopOrderLimit": 50
+        "warnLimit": "100",
+        "minLimit": "77"
     }
 }
