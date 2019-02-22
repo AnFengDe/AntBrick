@@ -141,7 +141,7 @@ class RmEngineManager(QtWidgets.QWidget):
         """
         #buttonClearOrderFlowCount.clicked.connect(self.rmEngine.clearOrderFlowCount)
         #buttonClearTradeCount.clicked.connect(self.rmEngine.clearTradeCount)
-        #self.buttonSwitchEngineStatus.clicked.connect(self.switchEngineSatus)
+        self.buttonSwitchEngineStatus.clicked.connect(self.switchEngineSatus)
         buttonSaveSetting.clicked.connect(self.saveSettingForVTSymbol)
         
         # 设为固定大小
@@ -155,8 +155,8 @@ class RmEngineManager(QtWidgets.QWidget):
 
     def saveSettingForVTSymbol(self):
         """写入配置信息"""
-        self.rmEngine.settingsDict[self.vtSymbol]['warnLimit'] = self.lineAccWarnLimit.text()
-        self.rmEngine.settingsDict[self.vtSymbol]['minLimit'] = self.lineAccMinLimit.text()
+        self.rmEngine.settingsDict[self.vtSymbol]['warnLimit'] = float(self.lineAccWarnLimit.text())
+        self.rmEngine.settingsDict[self.vtSymbol]['minLimit'] = float(self.lineAccMinLimit.text())
 
         self.rmEngine.saveSetting()
 
@@ -173,5 +173,3 @@ class RmEngineManager(QtWidgets.QWidget):
             self.buttonSwitchEngineStatus.setText(text.RISK_MANAGER_RUNNING)
         else:
             self.buttonSwitchEngineStatus.setText(text.RISK_MANAGER_STOP)
- 
-    
