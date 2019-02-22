@@ -931,7 +931,7 @@ class TradingWidget(QtWidgets.QFrame):
         
         # 查询合约
         if exchange:
-            vtSymbol = '.'.join([symbol, exchange])
+            vtSymbol = '.'.join([exchange, symbol])
             contract = self.mainEngine.getContract(vtSymbol)
         else:
             vtSymbol = symbol
@@ -1048,7 +1048,7 @@ class TradingWidget(QtWidgets.QFrame):
 
         # 查询合约
         if exchange:
-            vtSymbol = '.'.join([symbol, exchange])
+            vtSymbol = '.'.join([exchange, symbol])
             contract = self.mainEngine.getContract(vtSymbol)
         else:
             vtSymbol = symbol

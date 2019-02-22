@@ -79,7 +79,7 @@ class VtTickData(VtBaseData):
         tick.gatewayName = gateway.gatewayName
         tick.symbol = symbol
         tick.exchange = exchange
-        tick.vtSymbol = symbol + '.' + exchange
+        tick.vtSymbol = exchange + '.' + symbol
     
         tick.lastPrice = lastPrice
         tick.lastVolume = lastVolume
@@ -161,7 +161,7 @@ class VtTradeData(VtBaseData):
         trade.gatewayName = gateway.gatewayName
         trade.symbol = symbol
         trade.exchange = exchange
-        trade.vtSymbol = symbol + '.' + exchange
+        trade.vtSymbol = exchange + '.' + symbol
 
         trade.orderID = orderID
         trade.vtOrderID = trade.gatewayName + '.' + trade.tradeID
@@ -251,7 +251,7 @@ class VtOrderData(VtBaseData):
         vtOrder.gatewayName = gateway.gatewayName
         vtOrder.symbol = symbol
         vtOrder.exchange = exchange
-        vtOrder.vtSymbol = symbol + '.' + exchange
+        vtOrder.vtSymbol = exchange + '.' + symbol
         vtOrder.orderID = orderId
         vtOrder.vtOrderID = gateway.gatewayName + '.' + orderId
 
@@ -305,7 +305,7 @@ class VtPositionData(VtBaseData):
         vtPosition.gatewayName = gateway.gatewayName
         vtPosition.symbol = symbol
         vtPosition.exchange = exchange
-        vtPosition.vtSymbol = symbol + '.' + exchange
+        vtPosition.vtSymbol = exchange + '.' + symbol
     
         vtPosition.direction = direction
         vtPosition.position = position
@@ -412,7 +412,7 @@ class VtContractData(VtBaseData):
         d.gatewayName = gateway.gatewayName
         d.symbol = symbol
         d.exchange = exchange
-        d.vtSymbol = symbol + '.' + exchange
+        d.vtSymbol = exchange + '.' + symbol
         d.productClass = productClass
         d.size = size
         d.priceTick = priceTick

@@ -1136,6 +1136,7 @@ class TradingWidget(QtWidgets.QFrame):
         self.setLayout(hbox)
 
         self.updateSymbolForGateway()  # 获取当前交易所的交易对信息
+        self.updateVtSymbol()
 
         # 关联更新
         self.comboGateway.currentIndexChanged.connect(self.updateSymbolForGateway)  # 根据交易所变化选择交易对
@@ -1145,30 +1146,24 @@ class TradingWidget(QtWidgets.QFrame):
     def updateSymbolForGateway(self):
         """根据交易所读取交易对"""
         self.curGateway = str(self.comboGateway.currentText())
-        #print(self.curGateway)
-        #print(self.fullSymbols)
 
         self.comboSymbol.clear()
         for items in self.fullSymbols:
             if items['gateway'] == self.curGateway:
-                #print('symbols is ', symbols)
                 self.comboSymbol.addItems(items['symbols'])
-        #contract = self.mainEngine.getContract(self.vtSymbol)
 
         # 清空价格数量
         self.linePrice.clear()
         self.lineVolume.clear()
-
-        #self.depthMonitor.updateVtSymbol(self.vtSymbol)
 
         # 订阅合约
         #req = VtSubscribeReq()
         #req.symbol = contract.symbol
         #self.mainEngine.subscribe(req, contract.gatewayName)
 
-    # output style is BTC-USDT.IDCM
+    # output style is IDCM.BTC-USDT
     def updateVtSymbol(self):
-        self.vtSymbol = self.comboSymbol.currentText() + "." + self.comboGateway.currentText()
+        self.vtSymbol = self.comboGateway.currentText() + "." + self.comboSymbol.currentText()
         #print("updateVtSymbol , vtsymbol is ", self.vtSymbol)
         #contract = self.mainEngine.getContract(self.vtSymbol)
         
@@ -1239,14 +1234,18 @@ class TradingWidget(QtWidgets.QFrame):
         # 委托
         req = VtOrderReq()
         req.symbol = self.comboSymbol.currentText()
-        req.vtSymbol = req.symbol
+        req.vtSymbol = self.vtSymbol
         req.price = price
         req.volume = volume
         req.direction = direction
         req.orderType = text_type(self.comboOrderType.currentText())
-        
-        self.mainEngine.sendOrder(req, self.curGateway)
-    
+
+        try:
+            self.mainEngine.sendOrder(req, self.curGateway)
+        except Exception as e:
+            print("sendOrder")
+            print(e)
+
     #----------------------------------------------------------------------
     def sendBuyOrder(self):
         """"""
@@ -1265,13 +1264,13 @@ class TradingWidget(QtWidgets.QFrame):
             self.mainEngine.cancelOrder(order, order.gatewayName)
 
 
-########################################################################
+"""
 class ContractMonitor(BasicMonitor):
-    """合约查询"""
+    # 合约查询
 
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, parent=None):
-        """Constructor"""
+        # Constructor
         super().__init__(parent=parent)
         
         self.mainEngine = mainEngine
@@ -1292,7 +1291,7 @@ class ContractMonitor(BasicMonitor):
         
     #----------------------------------------------------------------------
     def initUi(self):
-        """初始化界面"""
+        # 初始化界面
         self.setMinimumSize(800, 800)
         self.setFont(BASIC_FONT)
         #self.setResizeMode(QtWidgets.QHeaderView.Stretch) 根据显示的内容自动调整单元格的大小
@@ -1301,7 +1300,7 @@ class ContractMonitor(BasicMonitor):
     
     #----------------------------------------------------------------------
     def showAllContracts(self):
-        """显示所有合约数据"""
+        # 显示所有合约数据
         l = self.mainEngine.getAllContracts()
         d = {'.'.join([contract.exchange, contract.symbol]):contract for contract in l}
         l2 = list(d.keys())
@@ -1331,7 +1330,7 @@ class ContractMonitor(BasicMonitor):
     
     #----------------------------------------------------------------------
     def refresh(self):
-        """刷新"""
+        # 刷新
         self.menu.close()   # 关闭菜单
         self.clearContents()
         self.setRowCount(0)
@@ -1339,7 +1338,7 @@ class ContractMonitor(BasicMonitor):
     
     #----------------------------------------------------------------------
     def addMenuAction(self):
-        """增加右键菜单内容"""
+        # 增加右键菜单内容
         refreshAction = QtWidgets.QAction(vtText.REFRESH, self)
         refreshAction.triggered.connect(self.refresh)
         
@@ -1347,23 +1346,23 @@ class ContractMonitor(BasicMonitor):
     
     #----------------------------------------------------------------------
     def show(self):
-        """显示"""
+        # 显示
         super().show()
         self.refresh()
         
     #----------------------------------------------------------------------
     def setFilterContent(self, content):
-        """设置过滤字符串"""
+        # 设置过滤字符串
         self.filterContent = content
     
 
 ########################################################################
 class ContractManager(QtWidgets.QWidget):
-    """合约管理组件"""
+    # 合约管理组件
 
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, parent=None):
-        """Constructor"""
+        # Constructor
         super().__init__(parent=parent)
         
         self.mainEngine = mainEngine
@@ -1372,7 +1371,7 @@ class ContractManager(QtWidgets.QWidget):
     
     #----------------------------------------------------------------------
     def initUi(self):
-        """初始化界面"""
+        # 初始化界面
         self.setWindowTitle(vtText.CONTRACT_SEARCH)
         
         self.lineFilter = QtWidgets.QLineEdit()
@@ -1394,7 +1393,7 @@ class ContractManager(QtWidgets.QWidget):
         
     #----------------------------------------------------------------------
     def filterContract(self):
-        """显示过滤后的合约"""
+        # 显示过滤后的合约
         content = str(self.lineFilter.text())
         self.monitor.setFilterContent(content)
         self.monitor.refresh()
@@ -1402,10 +1401,10 @@ class ContractManager(QtWidgets.QWidget):
 
 ########################################################################
 class KlineManager(QtWidgets.QWidget):
-    """K线管理组件,未启用"""
+    # K线管理组件,未启用
     # ----------------------------------------------------------------------
     def __init__(self, mainEngine, parent=None):
-        """Constructor"""
+        # Constructor
         super().__init__(parent=parent)
 
         self.mainEngine = mainEngine
@@ -1414,7 +1413,7 @@ class KlineManager(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def initUi(self):
-        """初始化界面"""
+        # 初始化界面
         self.setWindowTitle(vtText.CONTRACT_SEARCH)
 
         self.lineFilter = QtWidgets.QLineEdit()
@@ -1436,11 +1435,11 @@ class KlineManager(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------
     def filterContract(self):
-        """显示过滤后的合约"""
+        # 显示过滤后的合约
         content = str(self.lineFilter.text())
         self.monitor.setFilterContent(content)
         self.monitor.refresh()
-
+"""
 
 ########################################################################
 class WorkingOrderMonitor(OrderMonitor):

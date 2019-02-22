@@ -242,7 +242,7 @@ class IdcmGateway(VtGateway):
 
             order.symbol = d['symbol']
             order.exchange = 'IDCM'
-            order.vtSymbol = '.'.join([order.symbol, order.exchange])
+            order.vtSymbol = '.'.join([order.exchange, order.symbol])
 
             order.orderID = d['orderid']
             # order.vtOrderID = '.'.join([self.gatewayName, localID])
@@ -367,7 +367,7 @@ class IdcmRestApi(RestClient):
             order.gatewayName = self.gatewayName
             order.symbol = orderReq.symbol
             #order.exchange = 'IDCM'
-            order.vtSymbol = '.'.join([order.symbol, order.exchange])
+            order.vtSymbol = '.'.join([order.exchange, order.symbol])
             #order.orderID = localID
             order.vtOrderID = vtOrderID
             order.direction = orderReq.direction
@@ -513,7 +513,7 @@ class IdcmRestApi(RestClient):
 
                     order.symbol = d['symbol']
                     order.exchange = EXCHANGE_IDCM
-                    order.vtSymbol = '.'.join([order.symbol, order.exchange])
+                    order.vtSymbol = '.'.join([order.exchange, order.symbol])
 
                     order.price = float(d['price'])  # 委托价格
                     order.avgprice = float(d['avgprice'])  # 平均成交价
@@ -760,7 +760,7 @@ class WebsocketApi(IdcmWebsocketApi):
             tick.gatewayName = self.gatewayName
             tick.symbol = symbol
             tick.exchange = EXCHANGE_IDCM
-            tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
+            tick.vtSymbol = '.'.join([tick.exchange, tick.symbol])
             self.tickDict[symbol] = tick
             self.dealDict[symbol] = tick
 
