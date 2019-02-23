@@ -22,7 +22,7 @@ class StopButton(QtWidgets.QPushButton):
     #----------------------------------------------------------------------
     def __init__(self, algoEngine, algoName=''):
         """Constructor"""
-        super(StopButton, self).__init__()
+        super().__init__()
         
         self.algoEngine = algoEngine
         self.algoName = algoName
@@ -69,7 +69,7 @@ class AlgoStatusMonitor(QtWidgets.QTableWidget):
     #----------------------------------------------------------------------
     def __init__(self, algoEngine, mode):
         """Constructor"""
-        super(AlgoStatusMonitor, self).__init__()
+        super().__init__()
         
         self.algoEngine = algoEngine
         self.eventEngine = algoEngine.eventEngine
@@ -199,10 +199,9 @@ class AlgoLogMonitor(QtWidgets.QTextEdit):
     #----------------------------------------------------------------------
     def __init__(self, algoEngine):
         """Constructor"""
-        super(AlgoLogMonitor, self).__init__()
+        super().__init__()
         
         self.eventEngine = algoEngine.eventEngine
-        
         self.registerEvent()
         
     #----------------------------------------------------------------------
@@ -229,7 +228,7 @@ class StartButton(QtWidgets.QPushButton):
     #----------------------------------------------------------------------
     def __init__(self, algoEngine, setting):
         """Constructor"""
-        super(StartButton, self).__init__()
+        super().__init__()
         
         self.algoEngine = algoEngine
         self.setting = setting
@@ -257,7 +256,7 @@ class DeleteButton(QtWidgets.QPushButton):
     #----------------------------------------------------------------------
     def __init__(self, algoEngine, setting):
         """Constructor"""
-        super(DeleteButton, self).__init__()
+        super().__init__()
         
         self.algoEngine = algoEngine
         self.setting = setting
@@ -286,7 +285,7 @@ class AlgoSettingMonitor(QtWidgets.QTableWidget):
     #----------------------------------------------------------------------
     def __init__(self, algoEngine):
         """Constructor"""
-        super(AlgoSettingMonitor, self).__init__()
+        super().__init__()
         
         self.algoEngine = algoEngine
         self.eventEngine = algoEngine.eventEngine
@@ -381,7 +380,7 @@ class AlgoManager(QtWidgets.QWidget):
     #----------------------------------------------------------------------
     def __init__(self, algoEngine, eventEngine, parent=None):
         """Constructor"""
-        super(AlgoManager, self).__init__(parent)
+        super().__init__(parent)
         
         self.algoEngine = algoEngine
         self.eventEngine = eventEngine
@@ -423,14 +422,15 @@ class AlgoManager(QtWidgets.QWidget):
         self.buttonSaveSetting = QtWidgets.QPushButton(u'加载算法配置')
         self.buttonSaveSetting.setStyleSheet("color:white;background-color:blue")
         self.buttonSaveSetting.clicked.connect(self.saveSettingFromCsv)
-        
+
+        """
         self.lineRepPort = QtWidgets.QLineEdit('8899')
         self.linePubPort = QtWidgets.QLineEdit('9988')
         
         self.buttonStartRpc = QtWidgets.QPushButton(u'启动RPC服务')
         self.buttonStartRpc.setStyleSheet("color:black;background-color:orange")
         self.buttonStartRpc.clicked.connect(self.startRpc)
-        
+        """
         label = QtWidgets.QLabel(u'算法类型')
         label.setFixedWidth(100)
         
@@ -439,10 +439,10 @@ class AlgoManager(QtWidgets.QWidget):
         hbox.addWidget(self.comboTemplate)
         
         grid = QtWidgets.QGridLayout()
-        grid.addWidget(QtWidgets.QLabel(u'REP端口'), 0, 0)
-        grid.addWidget(self.lineRepPort, 0, 1)
-        grid.addWidget(QtWidgets.QLabel(u'PUB端口'), 1, 0)
-        grid.addWidget(self.linePubPort, 1, 1)
+        #grid.addWidget(QtWidgets.QLabel(u'REP端口'), 0, 0)
+        #grid.addWidget(self.lineRepPort, 0, 1)
+        #grid.addWidget(QtWidgets.QLabel(u'PUB端口'), 1, 0)
+        #grid.addWidget(self.linePubPort, 1, 1)
         
         vbox1 = QtWidgets.QVBoxLayout()
         vbox1.addLayout(hbox)
@@ -453,7 +453,7 @@ class AlgoManager(QtWidgets.QWidget):
         vbox1.addWidget(self.buttonSaveSetting)
         vbox1.addStretch()
         vbox1.addLayout(grid)
-        vbox1.addWidget(self.buttonStartRpc)
+        #vbox1.addWidget(self.buttonStartRpc)
         
         workingMonitor = AlgoStatusMonitor(self.algoEngine, AlgoStatusMonitor.MODE_WORKING)
         workingMonitor.setFixedWidth(1500)
