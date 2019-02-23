@@ -165,18 +165,21 @@ class MainEngine(object):
     def exit(self):
         """退出程序前调用，保证正常退出"""        
         # 安全关闭所有接口
-        for gateway in self.gatewayDict.values():        
-            gateway.close()
-        
-        # 停止事件引擎
-        self.eventEngine.stop()
-        
-        # 停止上层应用引擎
-        for appEngine in self.appDict.values():
-            appEngine.stop()
-        
-        # 保存数据引擎里的合约数据到硬盘
-        #self.dataEngine.saveContracts()
+        try:
+            for gateway in self.gatewayDict.values():
+                gateway.close()
+
+            # 停止事件引擎
+            self.eventEngine.stop()
+
+            # 停止上层应用引擎
+            for appEngine in self.appDict.values():
+                appEngine.stop()
+
+            # 保存数据引擎里的合约数据到硬盘
+            #self.dataEngine.saveContracts()
+        except Exception as e:
+            print(e)
     
     #----------------------------------------------------------------------
     def writeLog(self, content):
