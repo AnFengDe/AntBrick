@@ -147,4 +147,4 @@ class RmEngineManager(QtWidgets.QWidget):
             self.buttonSwitchEngineStatus.setStyleSheet("background-color: green")
         else:
             self.buttonSwitchEngineStatus.setText(text.RISK_MANAGER_STOP)
-            self.buttonSwitchEngineStatus.setStyleSheet("background-color: red")
+            self.buttonSwitchEngineStatus.setStyleSheet("background-color: gray")
