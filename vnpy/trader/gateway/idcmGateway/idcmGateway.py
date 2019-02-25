@@ -20,7 +20,7 @@ from vnpy.api.idcm import IdcmWebsocketApi
 from vnpy.trader.vtGateway import *
 from vnpy.trader.vtFunction import getJsonPath
 
-from threading import Thread
+#from threading import Thread
 
 REST_HOST = 'https://api.IDCM.cc:8323'
 WEBSOCKET_HOST = 'wss://real.idcm.cc:10330/websocket'
@@ -178,6 +178,10 @@ class IdcmGateway(VtGateway):
     def cancelOrder(self, cancelOrderReq):
         """撤单"""
         self.restApi.cancelOrder(cancelOrderReq)
+
+    def cancelAllOrders(self):
+        """全部撤单"""
+        self.restApi.cancelAllOrders()
 
     # ----------------------------------------------------------------------
     def close(self):
@@ -342,7 +346,7 @@ class IdcmRestApi(RestClient):
         #self.reqThread = Thread(target=self.queryAccount)
         #self.reqThread.start()
         self.queryAccount()
-        self.queryHistoryOrder()
+        #self.queryHistoryOrder()
 
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
@@ -399,6 +403,11 @@ class IdcmRestApi(RestClient):
         except Exception as e:
             print(e)
         self.addRequest('POST', '/api/v1/cancel_order', callback=self.onCancelOrder, data=data, extra=cancelReq)
+
+    # 取消全部订单
+    def cancelAllOrders(self):
+        data = 1
+        self.addRequest('POST', '/api/v1/CancelAllOrders', callback=self.onCancelAllOrders, data=data)
 
     # 获取IDCM最新币币行情数据
     def queryTicker(self):
@@ -607,6 +616,16 @@ class IdcmRestApi(RestClient):
             order = request.extra
             order.status = STATUS_CANCELLED # 订单状态
             self.gateway.onOrder(order)
+
+    def onCancelAllOrders(self, data, request):
+        if data['result'] != 1:
+            try:
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+            except Exception as e:
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+            self.gateway.writeLog(msg)
+        else:
+            return
 
     # ----------------------------------------------------------------------
     def onFailed(self, httpStatusCode, request):  # type:(int, Request)->None
