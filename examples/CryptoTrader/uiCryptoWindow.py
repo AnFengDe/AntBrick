@@ -120,13 +120,15 @@ class MainWindow(QtWidgets.QMainWindow):
         
         # 帮助
         helpMenu = menubar.addMenu(vtText.HELP)
-        helpMenu.addAction(self.createAction(vtText.CONTRACT_SEARCH, self.openContract, loadIconPath('contract.ico')))
+        #helpMenu.addAction(self.createAction(vtText.CONTRACT_SEARCH, self.openContract, loadIconPath('contract.ico')))
         helpMenu.addAction(self.createAction(vtText.EDIT_SETTING, self.openSettingEditor, loadIconPath('editor.ico')))
         helpMenu.addSeparator()
         helpMenu.addAction(self.createAction(vtText.RESTORE, self.restoreWindow, loadIconPath('restore.ico')))
         helpMenu.addAction(self.createAction(vtText.ABOUT, self.openAbout, loadIconPath('about.ico')))
         helpMenu.addSeparator()
         helpMenu.addAction(self.createAction(vtText.TEST, self.test, loadIconPath('test.ico')))
+
+        self.mainEngine.connect("IDCM")  # 自动连接IDCM交易所
     
     #----------------------------------------------------------------------
     def initStatusBar(self):
