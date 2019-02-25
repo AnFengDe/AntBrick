@@ -83,7 +83,7 @@ class RmEngineManager(QtWidgets.QWidget):
         """
         #buttonClearOrderFlowCount = QtWidgets.QPushButton(text.CLEAR_ORDER_FLOW_COUNT)
         #buttonClearTradeCount = QtWidgets.QPushButton(text.CLEAR_TOTAL_FILL_COUNT)
-        buttonSaveSetting = QtWidgets.QPushButton(text.SAVE_SETTING)
+        self.buttonSaveSetting = QtWidgets.QPushButton(text.SAVE_SETTING)
         
         Label = QtWidgets.QLabel
         grid = QtWidgets.QGridLayout()
@@ -99,33 +99,11 @@ class RmEngineManager(QtWidgets.QWidget):
         self.getSettingForVTSymbol()
         self.comboVtSymbol.currentIndexChanged.connect(self.getSettingForVTSymbol)
 
-        """
-        grid.addWidget(RmLine(), 1, 0, 1, 2)
-        grid.addWidget(Label(text.ORDER_FLOW_LIMIT), 2, 0)
-        grid.addWidget(self.spinOrderFlowLimit, 2, 1)
-        grid.addWidget(Label(text.ORDER_FLOW_CLEAR), 3, 0)
-        grid.addWidget(self.spinOrderFlowClear, 3, 1)
-        grid.addWidget(RmLine(), 4, 0, 1, 2)
-        grid.addWidget(Label(text.ORDER_SIZE_LIMIT), 5, 0)
-        grid.addWidget(self.spinOrderSizeLimit, 5, 1)
-        grid.addWidget(RmLine(), 6, 0, 1, 2)
-        grid.addWidget(Label(text.TOTAL_TRADE_LIMIT), 7, 0)
-        grid.addWidget(self.spinTradeLimit, 7, 1)
-        grid.addWidget(RmLine(), 8, 0, 1, 2)
-        grid.addWidget(Label(text.WORKING_ORDER_LIMIT), 9, 0)
-        grid.addWidget(self.spinWorkingOrderLimit, 9, 1)
-        grid.addWidget(RmLine(), 10, 0, 1, 2)
-        grid.addWidget(Label(text.CONTRACT_CANCEL_LIMIT), 11, 0)
-        grid.addWidget(self.spinOrderCancelLimit, 11, 1)
-        grid.addWidget(RmLine(), 12, 0, 1, 2)
-        grid.addWidget(Label(text.MARGIN_RATIO_LIMIT), 13, 0)
-        grid.addWidget(self.spinMarginRatioLimit, 13, 1)        
-        """
         hbox = QtWidgets.QHBoxLayout()
         #hbox.addWidget(buttonClearOrderFlowCount)
         #hbox.addWidget(buttonClearTradeCount)
         hbox.addStretch()
-        hbox.addWidget(buttonSaveSetting)
+        hbox.addWidget(self.buttonSaveSetting)
         
         vbox = QtWidgets.QVBoxLayout()
         vbox.addLayout(grid)
@@ -134,15 +112,10 @@ class RmEngineManager(QtWidgets.QWidget):
 
 
         # 连接组件信号
-        """
-        self.spinWorkingOrderLimit.valueChanged.connect(self.rmEngine.setWorkingOrderLimit)
-        self.spinOrderCancelLimit.valueChanged.connect(self.rmEngine.setOrderCancelLimit)
-        self.spinMarginRatioLimit.valueChanged.connect(self.rmEngine.setMarginRatioLimit)        
-        """
         #buttonClearOrderFlowCount.clicked.connect(self.rmEngine.clearOrderFlowCount)
         #buttonClearTradeCount.clicked.connect(self.rmEngine.clearTradeCount)
         self.buttonSwitchEngineStatus.clicked.connect(self.switchEngineSatus)
-        buttonSaveSetting.clicked.connect(self.saveSettingForVTSymbol)
+        self.buttonSaveSetting.clicked.connect(self.saveSettingForVTSymbol)
         
         # 设为固定大小
         self.setFixedSize(self.sizeHint())
@@ -171,5 +144,7 @@ class RmEngineManager(QtWidgets.QWidget):
         """更新引擎状态"""
         if self.rmEngine.active:
             self.buttonSwitchEngineStatus.setText(text.RISK_MANAGER_RUNNING)
+            self.buttonSwitchEngineStatus.setStyleSheet("background-color: green")
         else:
             self.buttonSwitchEngineStatus.setText(text.RISK_MANAGER_STOP)
+            self.buttonSwitchEngineStatus.setStyleSheet("background-color: red")
