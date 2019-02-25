@@ -15,17 +15,18 @@ from vnpy.trader.vtEngine import MainEngine
 from vnpy.trader.uiQt import createQApp
 
 # 加载底层接口
-from vnpy.trader.gateway import (huobiGateway, okexGateway, okexfGateway,
-                                 binanceGateway, bitfinexGateway,
-                                 bitmexGateway, fcoinGateway,
-                                 #bigoneGateway,
-                                 lbankGateway,
-                                 coinbaseGateway, ccxtGateway,
-                                 ucoinGateway,
+from vnpy.trader.gateway import (ucoinGateway,
                                  idcmGateway)
+                                #(huobiGateway, okexGateway, okexfGateway,
+                                 #binanceGateway, bitfinexGateway,
+                                 #bitmexGateway, fcoinGateway,
+                                 #bigoneGateway,
+                                 #lbankGateway,
+                                 #coinbaseGateway, ccxtGateway)
 
 # 加载上层应用
-from vnpy.trader.app import (algoTrading)  # 算法交易
+#from vnpy.trader.app import (algoTrading)
+from vnpy.trader.app.alGo import (followBtcSelfTrade)  # 跟随BTC刷单交易
 from vnpy.trader.app import (riskManager)  # 风控模块
 #from vnpy.trader.app import (dataRecorder)
 #from vnpy.trader.app import (optionMaster)
@@ -61,17 +62,18 @@ def main():
     #me.addGateway(okexGateway)
     #me.addGateway(binanceGateway)
     #me.addGateway(bitfinexGateway)
+    #me.addGateway(ucoinGateway)
     me.addGateway(idcmGateway)
-    
+
     # 添加上层应用
-    me.addApp(algoTrading)
+#    me.addApp(algoTrading)
+    me.addApp(followBtcSelfTrade)
     me.addApp(riskManager)
 #    me.addApp(dataRecorder)
 #    me.addApp(optionMaster)
     #me.addApp(rpcService)
 #    me.addApp(rtdService)
 #    me.addApp(spreadTrading)
-    #me.addApp(tradeCopy)
 
     # 创建主窗口
     mw = MainWindow(me, ee)
