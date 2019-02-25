@@ -50,9 +50,10 @@ def test():
     while loopcount < 100:
         btcDatagateway = CoinbaseWatch()
         btcDatagateway.connect()
-        time.sleep(2)
+        time.sleep(3)
         price = btcDatagateway.getLatestPrice()
         if price == 0:
+            print('price is 0')
             print('sleep 2')
             time.sleep(2)
             price = btcDatagateway.getLatestPrice()
