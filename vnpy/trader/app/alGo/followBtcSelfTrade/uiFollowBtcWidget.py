@@ -15,6 +15,7 @@ class HorizonSplitLine(QtWidgets.QFrame):
         super().__init__()
         self.setFrameShape(self.HLine)
         self.setFrameShadow(self.Sunken)
+        self.setStyleSheet("background-color: blue")
 
 
 class SplitGrid(QtWidgets.QFormLayout):
@@ -73,7 +74,7 @@ class FollowBtcEngineManager(QtWidgets.QWidget):
         gridBtcCheck.addWidget(self.lineSymbolMinPrice, 2, 1)
         gridBtcCheck.addWidget(Label(u'交易对最高价'), 3, 0)
         gridBtcCheck.addWidget(self.lineSymbolMaxPrice, 3, 1)
-        gridBtcCheck.addWidget(Label(u'比特币基准价'), 4, 0)
+        gridBtcCheck.addWidget(Label(u'比特币基准价USDT'), 4, 0)
         gridBtcCheck.addWidget(self.lineBtcBasicPrice, 4, 1)
         gridBtcCheck.addWidget(Label(u'买卖档数'), 5, 0)
         gridBtcCheck.addWidget(self.lineOrderLevel, 5, 1)
@@ -102,6 +103,7 @@ class FollowBtcEngineManager(QtWidgets.QWidget):
         gridSelfTrade.addWidget(self.lineSelfTradeDayVolume, 2, 1)
 
         self.buttonSaveSetting = QtWidgets.QPushButton(u'保存配置')
+        self.buttonSaveSetting.setStyleSheet("background-color: blue")
         #buttonActivate = QtWidgets.QPushButton(u'激活算法')
         self.buttonSwitchEngineStatus = QtWidgets.QPushButton(u'BTC跟随报价刷单引擎停止')
 
