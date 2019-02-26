@@ -27,16 +27,23 @@ class RmSpinBox(QtWidgets.QSpinBox):
     
 
 ########################################################################
-class RmLine(QtWidgets.QFrame):
-    """水平分割线"""
-
+class HorizonSplitLine(QtWidgets.QFrame):
+    # 水平分割线
     #----------------------------------------------------------------------
     def __init__(self):
         """Constructor"""
-        super(RmLine, self).__init__()
+        super().__init__()
         self.setFrameShape(self.HLine)
         self.setFrameShadow(self.Sunken)
-    
+
+
+class SplitGrid(QtWidgets.QFormLayout):
+    # 水平分割线
+    def __init__(self):
+        """Constructor"""
+        super().__init__()
+        lineSplit = HorizonSplitLine()
+        self.addWidget(lineSplit)
 
 ########################################################################
 class RmEngineManager(QtWidgets.QWidget):
@@ -49,8 +56,10 @@ class RmEngineManager(QtWidgets.QWidget):
         
         self.rmEngine = rmEngine
         self.eventEngine = eventEngine
-        
-        self.initUi()
+        try:
+            self.initUi()
+        except Exception as e:
+            print(e)
         self.updateEngineStatus()
 
     #----------------------------------------------------------------------
@@ -68,6 +77,9 @@ class RmEngineManager(QtWidgets.QWidget):
         self.lineAccWarnLimit = QtWidgets.QLineEdit()
         self.lineAccMinLimit = QtWidgets.QLineEdit()
 
+        #self.lineSplit = RmLine()
+        #self.lineSplit1 = RmLine()
+        self.lineBar = QtWidgets.QToolBar()
         """
         self.spinOrderFlowLimit = RmSpinBox(self.rmEngine.orderFlowLimit)
         self.spinOrderFlowClear = RmSpinBox(self.rmEngine.orderFlowClear)
@@ -95,6 +107,9 @@ class RmEngineManager(QtWidgets.QWidget):
         grid.addWidget(self.lineAccWarnLimit, 2, 1)
         grid.addWidget(Label(u'账户余额最低值'), 3, 0)
         grid.addWidget(self.lineAccMinLimit, 3, 1)
+        #grid.addWidget(self.lineSplit, 4, 0)
+        #grid.addWidget(self.lineSplit1, 4, 1)
+        #grid.addWidget(self.lineBar, 5, 0)
 
         self.getSettingForVTSymbol()
         self.comboVtSymbol.currentIndexChanged.connect(self.getSettingForVTSymbol)
@@ -107,6 +122,10 @@ class RmEngineManager(QtWidgets.QWidget):
         
         vbox = QtWidgets.QVBoxLayout()
         vbox.addLayout(grid)
+
+        #grid1 = SplitGrid()
+        #vbox.addLayout(grid1)
+
         vbox.addLayout(hbox)
         self.setLayout(vbox)
 
