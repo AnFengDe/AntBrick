@@ -482,7 +482,7 @@ class LogMonitor(BasicMonitor):
         self.eventEngine.register(EVENT_ERROR, self.signalError.emit)
 
         self.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
-        self.setFixedHeight(200)
+        #self.setFixedHeight(200)
     
     #----------------------------------------------------------------------
     def processErrorEvent(self, event):
@@ -531,7 +531,7 @@ class TradeMonitor(BasicMonitor):
         self.initTable()
         self.registerEvent()
 
-        self.setFixedHeight(200)
+        self.setFixedHeight(300)
 
 
 class DealsMonitor(BasicMonitor):
@@ -561,6 +561,7 @@ class DealsMonitor(BasicMonitor):
 
         self.initTable()
         self.registerEvent()
+        self.setShowGrid(False)  # 不显示边框
         #self.connectSignal()
 
 
@@ -700,11 +701,22 @@ class DepthMonitor(QtWidgets.QTableWidget):
         
         self.mainEngine = mainEngine
         
-        self.contractSize = 1   # 合约乘数
+        #self.contractSize = 1   # 合约乘数
         self.cellDict = {}
 
         self.depth = 20
         self.initUi()
+        self.setShowGrid(False)  # 不显示格子线
+        #self.showMaximized()
+        #self.setFixedHeight(820)
+        #self.setRowHeight(1,10)
+        #self.setRowHeight(3,10)
+        self.horizontalHeader().setFixedHeight(15)  # 设定顶部标题高度
+        self.verticalHeader().setDefaultSectionSize(16)
+        self.verticalHeader().setStyleSheet("color:blue;background-color:yellow")
+        #self.verticalHeader().setFixedHeight(200)
+
+        #self.horizontalHeader.setStyleSheet("color:black;background-color:yellow")
     
     #----------------------------------------------------------------------
     def initUi(self):
@@ -747,10 +759,12 @@ class DepthMonitor(QtWidgets.QTableWidget):
         self.setRowCount(len(verticalLabels))
         self.setHorizontalHeaderLabels(horizonLabels)
         self.setVerticalHeaderLabels(verticalLabels)
+        #self.verticalHeader().setStyleSheet("color:red;background-color:yellow")
         #self.verticalHeader().setVisible(False)
         self.setEditTriggers(self.NoEditTriggers)   
         self.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-        self.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        #self.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        #self.verticalHeader().setShowGrid(False)
         
         left = QtCore.Qt.AlignLeft
         right = QtCore.Qt.AlignRight
@@ -1051,7 +1065,7 @@ class TradingWidget(QtWidgets.QFrame):
     def initUi(self):
         """初始化界面"""
         self.setWindowTitle(vtText.TRADING)
-        self.setFixedHeight(1050)
+        self.setFixedHeight(600)
         self.setFixedWidth(700)
         self.setFrameShape(self.Box)    # 设置边框
         self.setLineWidth(1)           
@@ -1096,7 +1110,7 @@ class TradingWidget(QtWidgets.QFrame):
         gridLeft.addWidget(self.linePrice, 3, 1)
         gridLeft.addWidget(self.lineVolume, 4, 1)
         
-        # 左边部分，10档行情和成交回报
+        # 右边部分，20档行情和成交回报
         self.depthMonitor = DepthMonitor(self.mainEngine, self.eventEngine)
         self.dealsMonitor = DealsMonitor(self.mainEngine, self.eventEngine)
 
@@ -1114,8 +1128,8 @@ class TradingWidget(QtWidgets.QFrame):
         buttonSell.clicked.connect(self.sendSellOrder)
         buttonCancelAll.clicked.connect(self.cancelAll)
         
-        buttonBuy.setStyleSheet('color:white;background-color:red')
-        buttonSell.setStyleSheet('color:white;background-color:green')
+        buttonBuy.setStyleSheet('color:white;background-color:green')
+        buttonSell.setStyleSheet('color:white;background-color:red')
         buttonCancelAll.setStyleSheet('color:black;background-color:yellow')
         
         gridButton = QtWidgets.QGridLayout()
