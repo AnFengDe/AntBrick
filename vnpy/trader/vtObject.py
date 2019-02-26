@@ -52,8 +52,8 @@ class VtTickData(VtBaseData):
         self.upperLimit = EMPTY_FLOAT           # 涨停价
         self.lowerLimit = EMPTY_FLOAT           # 跌停价
         
-        # 十档行情
-        for index in range(10):
+        # 20档行情
+        for index in range(20):
             para= "bidPrice" + str(index+1)
             setattr(self, para, EMPTY_FLOAT)
 
