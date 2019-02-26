@@ -703,7 +703,7 @@ class DepthMonitor(QtWidgets.QTableWidget):
         self.contractSize = 1   # 合约乘数
         self.cellDict = {}
 
-        self.depth = 10
+        self.depth = 20
         self.initUi()
     
     #----------------------------------------------------------------------
@@ -1051,7 +1051,7 @@ class TradingWidget(QtWidgets.QFrame):
     def initUi(self):
         """初始化界面"""
         self.setWindowTitle(vtText.TRADING)
-        self.setFixedHeight(590)
+        self.setFixedHeight(1050)
         self.setFixedWidth(700)
         self.setFrameShape(self.Box)    # 设置边框
         self.setLineWidth(1)           
