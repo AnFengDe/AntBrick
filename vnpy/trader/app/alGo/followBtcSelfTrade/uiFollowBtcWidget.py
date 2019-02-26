@@ -59,7 +59,8 @@ class FollowBtcEngineManager(QtWidgets.QWidget):
         self.lineBtcBasicPrice = QtWidgets.QLineEdit()
         self.lineOrderLevel = QtWidgets.QLineEdit()
         self.lineOrderPriceGap = QtWidgets.QLineEdit()
-        self.lineOrderVolume = QtWidgets.QLineEdit()
+        self.lineOrderVolumeMin = QtWidgets.QLineEdit()
+        self.lineOrderVolumeMax = QtWidgets.QLineEdit()
         self.lineBtcCheckInterval = QtWidgets.QLineEdit()
         self.linePriceRatio = QtWidgets.QLineEdit()
 
@@ -74,18 +75,20 @@ class FollowBtcEngineManager(QtWidgets.QWidget):
         gridBtcCheck.addWidget(self.lineSymbolMinPrice, 2, 1)
         gridBtcCheck.addWidget(Label(u'交易对最高价'), 3, 0)
         gridBtcCheck.addWidget(self.lineSymbolMaxPrice, 3, 1)
-        gridBtcCheck.addWidget(Label(u'比特币基准价USDT'), 4, 0)
+        gridBtcCheck.addWidget(Label(u'比特币基准价(USDT)'), 4, 0)
         gridBtcCheck.addWidget(self.lineBtcBasicPrice, 4, 1)
         gridBtcCheck.addWidget(Label(u'买卖档数'), 5, 0)
         gridBtcCheck.addWidget(self.lineOrderLevel, 5, 1)
-        gridBtcCheck.addWidget(Label(u'档间价差'), 6, 0)
+        gridBtcCheck.addWidget(Label(u'档间价差倍数'), 6, 0)
         gridBtcCheck.addWidget(self.lineOrderPriceGap, 6, 1)
-        gridBtcCheck.addWidget(Label(u'每档挂单数量'), 7, 0)
-        gridBtcCheck.addWidget(self.lineOrderVolume, 7, 1)
-        gridBtcCheck.addWidget(Label(u'比特币检查时间间隔'), 8, 0)
-        gridBtcCheck.addWidget(self.lineBtcCheckInterval, 8, 1)
-        gridBtcCheck.addWidget(Label(u'价格波动倍数'), 9, 0)
-        gridBtcCheck.addWidget(self.linePriceRatio, 9, 1)
+        gridBtcCheck.addWidget(Label(u'每档挂单数量上限'), 7, 0)
+        gridBtcCheck.addWidget(self.lineOrderVolumeMax, 7, 1)
+        gridBtcCheck.addWidget(Label(u'每档挂单数量下限'), 8, 0)
+        gridBtcCheck.addWidget(self.lineOrderVolumeMin, 8, 1)
+        gridBtcCheck.addWidget(Label(u'比特币检查时间间隔(秒)'), 9, 0)
+        gridBtcCheck.addWidget(self.lineBtcCheckInterval, 9, 1)
+        gridBtcCheck.addWidget(Label(u'价格波动倍数'), 10, 0)
+        gridBtcCheck.addWidget(self.linePriceRatio, 10, 1)
 
         gridSplit = SplitGrid()
 
@@ -97,10 +100,11 @@ class FollowBtcEngineManager(QtWidgets.QWidget):
 
         gridSelfTrade.addWidget(Label(u'每次刷单平均数量'), 0, 0)
         gridSelfTrade.addWidget(self.lineSelfTradeVolume, 0, 1)
-        gridSelfTrade.addWidget(Label(u'刷单间隔时间'), 1, 0)
+        gridSelfTrade.addWidget(Label(u'刷单间隔时间(秒)'), 1, 0)
         gridSelfTrade.addWidget(self.lineSelfTradeInterval, 1, 1)
         gridSelfTrade.addWidget(Label(u'预估每日刷单数量'), 2, 0)
         gridSelfTrade.addWidget(self.lineSelfTradeDayVolume, 2, 1)
+        self.lineSelfTradeDayVolume.setStyleSheet("color: yellow")
 
         self.buttonSaveSetting = QtWidgets.QPushButton(u'保存配置')
         self.buttonSaveSetting.setStyleSheet("background-color: blue")
@@ -134,14 +138,21 @@ class FollowBtcEngineManager(QtWidgets.QWidget):
         else:
             return
 
-        self.lineSymbolBasicPrice.setText(str(setting['symbolBasicPrice']))
-        self.lineBtcBasicPrice.setText(str(setting['btcBasicPrice']))
-        self.lineOrderLevel.setText(str(setting['orderLevel']))
-        self.lineOrderPriceGap.setText(str(setting['orderPriceGap']))
-        self.lineOrderVolume.setText(str(setting['orderVolume']))
-        self.lineBtcCheckInterval.setText(str(setting['btcCheckInterval']))
-        #self.linePlaceOrderInterval.setText(str(setting['placeOrderInterval']))
-        self.lineSelfTradeVolume.setText(str(setting['selfTradeVolume']))
+        try:
+            self.lineSymbolBasicPrice.setText(str(setting['symbolBasicPrice']))
+            self.lineSymbolMinPrice.setText(str(setting['symbolMinPrice']))
+            self.lineSymbolMaxPrice.setText(str(setting['symbolMaxPrice']))
+            self.lineBtcBasicPrice.setText(str(setting['btcBasicPrice']))
+            self.lineOrderLevel.setText(str(setting['orderLevel']))
+            self.lineOrderPriceGap.setText(str(setting['orderPriceGap']))
+            self.lineOrderVolumeMin.setText(str(setting['orderVolumeMin']))
+            self.lineOrderVolumeMax.setText(str(setting['orderVolumeMax']))
+            self.lineBtcCheckInterval.setText(str(setting['btcCheckInterval']))
+            #self.linePlaceOrderInterval.setText(str(setting['placeOrderInterval']))
+            self.lineSelfTradeVolume.setText(str(setting['selfTradeVolume']))
+            self.lineSelfTradeInterval.setText(str(setting['selfTradeInterval']))
+        except Exception as e:
+            print(e)
 
     def getSettingFromMenu(self):
         # 写入配置到settingsDict
@@ -149,13 +160,16 @@ class FollowBtcEngineManager(QtWidgets.QWidget):
             setting = self.followBtcEngine.settingsDict[self.vtSymbol]
 
             setting['symbolBasicPrice'] = float(self.lineSymbolBasicPrice.text())
+            setting['symbolMinPrice'] = float(self.lineSymbolMinPrice.text())
+            setting['symbolMaxPrice'] = float(self.lineSymbolMaxPrice.text())
             setting['btcBasicPrice'] = float(self.lineBtcBasicPrice.text())
             setting['orderLevel'] = int(self.lineOrderLevel.text())
             setting['orderPriceGap'] = float(self.lineOrderPriceGap.text())
-            setting['orderVolume'] = float(self.lineOrderVolume.text())
+            setting['orderVolumeMin'] = float(self.lineOrderVolumeMin.text())
+            setting['orderVolumeMax'] = float(self.lineOrderVolumeMax.text())
             setting['btcCheckInterval'] = float(self.lineBtcCheckInterval.text())
-            #self.followBtcEngine.settingsDict[self.vtSymbol]['placeOrderInterval'] = float(self.linePlaceOrderInterval.text())
             setting['selfTradeVolume'] = float(self.lineSelfTradeVolume.text())
+            setting['selfTradeInterval'] = float(self.lineSelfTradeInterval.text())
         except Exception as e:
             print(e)
 
