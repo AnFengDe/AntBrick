@@ -283,7 +283,7 @@ class UcoinRestApi(RestClient):
             print(e)
 
     def onLogin(self, data, request):
-        print(data)
+        #print(data)
         """"""
         if data['code'] == '0':
             self.access_token = data['data']['access_token']
@@ -298,7 +298,7 @@ class UcoinRestApi(RestClient):
             self.gateway.writeLog(msg)
 
     def sign(self, request):
-        print("sign with request")
+        #print("sign with request")
         #ucoin的签名方案
         if request.data:
             request.data = json.dumps(request.data)
@@ -314,15 +314,17 @@ class UcoinRestApi(RestClient):
         #    'Content-Type': 'application/json'
         #}
         authString = 'Bearer '+ self.access_token
-        print(authString)
+        #print(authString)
         if self.access_token is not '':
             request.headers = {
-                'Authorization': authString
+                'Authorization': authString,
+                'Content-Type': 'application/json'
             }
         else:
             request.headers = {
                 'Content-Type': 'application/json'
             }
+        #print(request.headers)
         return request
 
     def generateSignature(self, curTime, apiSecret):
@@ -360,14 +362,17 @@ class UcoinRestApi(RestClient):
             vtOrderID = '.'.join([self.gatewayName, localID])
 
             direction_ = directionMap[orderReq.direction]
-            type_ = orderTypeMap[orderReq.orderType]
+
+            currentTime = str(int(time.time()))
+            signature = self.generateSignature(currentTime, self.apiKey)
+            #type_ = orderTypeMap[orderReq.orderType]
             data = {
-                'Symbol': orderReq.symbol,  # 交易对
-                'size': orderReq.volume,  # 交易数量
-                'price': orderReq.price,
-                'Side': direction_,  # 交易方向(0 买入 1 卖出)
-                'type': type_,  # 订单类型 (0 市场价 1 限价)
-                "Amount": float(orderReq.volume * orderReq.price)  # 订单总金额 - 市价必填
+                'cur_time': currentTime,
+                'sign': signature,
+                'price': str(orderReq.price),
+                'number': str(orderReq.volume),  # 交易数量
+                'type': str(direction_)  # 交易方向(0 买入 1 卖出)
+                #'type': type_,  # 订单类型 (0 市场价 1 限价)
             }
 
             # 缓存委托
@@ -379,9 +384,9 @@ class UcoinRestApi(RestClient):
             #order.orderID = localID
             order.vtOrderID = vtOrderID
             order.direction = orderReq.direction
-            order.ordertType = orderReq.orderType
+            #order.ordertType = orderReq.orderType
             order.price = orderReq.price
-            order.amount = orderReq.volume
+            order.volume = orderReq.volume
             #order.localID = localID
             # order.totalVolume = orderReq.volume * orderReq.price
             order.status = STATUS_UNKNOWN
@@ -389,7 +394,9 @@ class UcoinRestApi(RestClient):
 
             self.orderBufDict[localID] = order
 
-            self.addRequest('POST', '/api/v1/trade',
+            url= ('/api/open/trade/order/' + order.symbol).lower()
+            print(data)
+            self.addRequest('POST', url,
                             callback=self.onSendOrder,
                             data=data,
                             extra=localID)
@@ -399,14 +406,17 @@ class UcoinRestApi(RestClient):
     # ----------------------------------------------------------------------
     def cancelOrder(self, cancelReq):
         try:
+            currentTime = str(int(time.time()))
+            signature = self.generateSignature(currentTime, self.apiKey)
             data = {
-                'Symbol': cancelReq.symbol,  # 交易对
-                'OrderID': cancelReq.orderID,  # 订单Id
-                'Side': directionMap[cancelReq.direction]  # 交易方向(0 买入 1 卖出)
+                'cur_time': currentTime,
+                'sign': signature,
+                'order_id': cancelReq.orderID,  # 订单Id
+                'type': directionMap[cancelReq.direction]  # 交易方向(0 买入 1 卖出)
             }
         except Exception as e:
             print(e)
-        self.addRequest('POST', '/api/v1/cancel_order', callback=self.onCancelOrder, data=data, extra=cancelReq)
+        self.addRequest('POST', '/api/open/trade/cancelOrder', callback=self.onCancelOrder, data=data, extra=cancelReq)
 
     # 获取IDCM最新币币行情数据
     def queryTicker(self):
@@ -470,8 +480,6 @@ class UcoinRestApi(RestClient):
         self.gateway.writeLog(u'历史订单查询成功')
 
     def onQueryAccount(self, data, request):
-        print('onQueryAccount')
-        print(data)
         if data['code'] == '0':
             d = data['data']
             currency = d['coin_name']
@@ -577,9 +585,10 @@ class UcoinRestApi(RestClient):
         localID = request.extra
         order = self.orderBufDict[localID]
 
-        if data['result'] != 1:
+        if data['code'] != '0':
+            print(data['code'])
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             except Exception as e:
                 msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
@@ -588,7 +597,7 @@ class UcoinRestApi(RestClient):
             self.gateway.onOrder(order)
         else:
             order.status = STATUS_ORDERED  # 已报
-            strOrderID = data['data']['orderid']
+            strOrderID = str(data['data']['order_id'])
 
             self.localOrderDict[localID] = strOrderID
             order.orderID = strOrderID  # 服务器返回orderid写入order
@@ -602,9 +611,9 @@ class UcoinRestApi(RestClient):
 
     # ----------------------------------------------------------------------
     def onCancelOrder(self, data, request):
-        if data['result'] != 1:
+        if data['code'] != '0':
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             except Exception as e:
                 msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
