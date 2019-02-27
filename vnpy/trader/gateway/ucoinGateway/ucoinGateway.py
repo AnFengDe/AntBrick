@@ -191,7 +191,7 @@ class UcoinGateway(VtGateway):
         self.restApi.queryAccount()
         #self.restApi.queryPosition()
 
-    def processQueueOrder(self, data, historyFlag):
+    def processQueueOrder(self, data, symbol):
         for d in data['data']:
             # self.gateway.localID += 1
             # localID = str(self.gateway.localID)
@@ -199,33 +199,25 @@ class UcoinGateway(VtGateway):
             order = VtOrderData()
             order.gatewayName = self.gatewayName
 
-            order.symbol = d['symbol']
-            order.exchange = 'IDCM'
+            order.symbol = symbol
+            order.exchange = EXCHANGE_UCOIN
             order.vtSymbol = '.'.join([order.symbol, order.exchange])
 
-            order.orderID = d['orderid']
+            order.orderID = d['tid']
             # order.vtOrderID = '.'.join([self.gatewayName, localID])
-            order.vtOrderID = '.'.join([self.gatewayName, order.orderID])
+            order.vtOrderID = self.gatewayName + '.' + str(order.orderID)
 
-            order.price = float(d['price'])  # 委托价格
-            order.avgprice = float(d['avgprice'])  # 平均成交价
-            order.volume = float(d['amount']) + float(d['executedamount'])  # 委托数量
-            order.tradedVolume = float(d['executedamount'])  # 成交数量
-            order.status = orderStatusMapReverse[d['status']]  # 订单状态
-            order.direction = directionMapReverse[d['side']]  # 交易方向   0 买入 1 卖出
-            order.orderType = orderTypeMapReverse[d['type']]  # 订单类型  0	市场价  1	 限价
+            #order.price = float(d['price'])  # 委托价格
+            order.avgprice = float(d['price'])  # 平均成交价
+            #order.volume = float(d['amount']) + float(d['executedamount'])  # 委托数量
+            order.tradedVolume = float(d['number'])  # 成交数量
+            #order.status = orderStatusMapReverse[d['status']]  # 订单状态
+            order.direction = directionMapReverse[d['type']]  # 交易方向   0 买入 1 卖出
+            #order.orderType = orderTypeMapReverse[d['type']]  # 订单类型  0	市场价  1	 限价
 
-            dt = datetime.fromtimestamp(d['timestamp'])
-            order.orderTime = dt.strftime('%Y-%m-%d %H:%M:%S')
+            order.orderTime = d['created_at']
 
-            if order.status == STATUS_ALLTRADED:
-                # order.vtTradeID =  '.'.join([self.gatewayName, order.orderID])
-                if historyFlag:
-                    self.onTrade(order)
-                else:
-                    self.onOrder(order)  # 普通推送更新委托列表
-            else:
-                self.onOrder(order)
+            self.onTrade(order)
 
     def writeLog(self, msg):
         """"""
@@ -283,13 +275,8 @@ class UcoinRestApi(RestClient):
             print(e)
 
     def onLogin(self, data, request):
-        #print(data)
-        """"""
         if data['code'] == '0':
             self.access_token = data['data']['access_token']
-            #self.queryOrder()
-            #self.queryHistoryOrder()
-            #self.gateway.writeLog(u'资金信息查询成功')
         else:
             try:
                 msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
@@ -298,8 +285,6 @@ class UcoinRestApi(RestClient):
             self.gateway.writeLog(msg)
 
     def sign(self, request):
-        #print("sign with request")
-        #ucoin的签名方案
         if request.data:
             request.data = json.dumps(request.data)
 
@@ -314,7 +299,6 @@ class UcoinRestApi(RestClient):
         #    'Content-Type': 'application/json'
         #}
         authString = 'Bearer '+ self.access_token
-        #print(authString)
         if self.access_token is not '':
             request.headers = {
                 'Authorization': authString,
@@ -352,7 +336,7 @@ class UcoinRestApi(RestClient):
         #self.reqThread = Thread(target=self.queryAccount)
         #self.reqThread.start()
         self.queryAccount()
-        #self.queryHistoryOrder()
+        self.queryHistoryOrder()
 
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
@@ -395,7 +379,6 @@ class UcoinRestApi(RestClient):
             self.orderBufDict[localID] = order
 
             url= ('/api/open/trade/order/' + order.symbol).lower()
-            print(data)
             self.addRequest('POST', url,
                             callback=self.onSendOrder,
                             data=data,
@@ -449,34 +432,11 @@ class UcoinRestApi(RestClient):
     # 获取Ucoin历史订单信息
     def queryHistoryOrder(self):
         """"""
-        path = '/api/v1/gethistoryorder'
         for symbol in self.symbols:
-            req = {
-                'Symbol': symbol,
-                "PageIndex": 1,  # 当前页数
-                "PageSize": 200,  # 每页数据条数，最多不超过200
-                "Status": orderStatusMap[STATUS_NOTTRADED]  # 未成交
-            }
-            self.addRequest('POST', path, data=req,
-                            callback=self.onQueryHistoryOrder)
+            path = '/api/open/trades/' + symbol
+            self.addRequest('GET', path,
+                            callback=self.onQueryHistoryOrder,extra=symbol)
 
-            req = {
-                'Symbol': symbol,
-                "PageIndex": 1,  # 当前页数
-                "PageSize": 200,  # 每页数据条数，最多不超过200
-                "Status": orderStatusMap[STATUS_PARTTRADED]  # 部分成交
-            }
-            self.addRequest('POST', path, data=req,
-                            callback=self.onQueryHistoryOrder)
-
-            req = {
-                'Symbol': symbol,
-                "PageIndex": 1,  # 当前页数
-                "PageSize": 200,  # 每页数据条数，最多不超过200
-                "Status": orderStatusMap[STATUS_ALLTRADED]  # 成交
-            }
-            self.addRequest('POST', path, data=req,
-                            callback=self.onQueryHistoryOrder)
         self.gateway.writeLog(u'历史订单查询成功')
 
     def onQueryAccount(self, data, request):
@@ -553,8 +513,9 @@ class UcoinRestApi(RestClient):
             self.gateway.writeLog(msg)
 
     def onQueryHistoryOrder(self, data, request):
-        if data['result'] == 1:
-            self.gateway.processQueueOrder(data, historyFlag=1)
+        print(data)
+        if data['code'] == '0':
+            self.gateway.processQueueOrder(data, symbol=request.extra)
         else:
             try:
                 msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
