@@ -327,11 +327,19 @@ class UcoinRestApi(RestClient):
         self.init(REST_HOST)
         self.start(sessionCount)
         self.login()
-        #self.reqThread = Thread(target=self.queryAccount)
-        #self.reqThread.start()
         self.queryAccount()
         self.queryHistoryOrder()
-        self.subscribeMarketData()
+        self.reqThread = Thread(target=self.subscribeMarketData)
+        self.reqThread.start()
+        #self.subscribeMarketData()
+
+    def stop(self):
+        """
+        强制停止运行，未发出的请求都会被暂停（仍处于队列中）
+        :return:
+        """
+        self._active = False
+        self.reqThread.join(timeout=1)
 
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
@@ -402,11 +410,13 @@ class UcoinRestApi(RestClient):
             tick = VtTickData()
             tick.gatewayName = self.gatewayName
             tick.symbol = symbol
-            tick.exchange = "UCOIN"
+            tick.exchange = EXCHANGE_UCOIN
             tick.vtSymbol = tick.exchange + '.' + tick.symbol
             self.tickDict[symbol] = tick
-        self.queryTick()
-        self.queryDepth()
+        while True:
+            self.queryTick()
+            self.queryDepth()
+            time.sleep(1)
 
     # 获取UCOIN最新币币行情数据
     def queryTick(self):
@@ -441,6 +451,7 @@ class UcoinRestApi(RestClient):
             print(e)
 
     def onDepth(self, data, request):
+        print(data)
         try:
             if data['code'] == '0':
                 data = data['data']
@@ -451,18 +462,20 @@ class UcoinRestApi(RestClient):
                 asks = data['asks']
 
                 depth = 20
+                # 卖单
                 try:
                     for index in range(depth):
                         if index == len(bids):
                             break
-                        para = "bidPrice" + str(index+1)
+                        para = "bidPrice" + str(len(bids)-index)
                         setattr(tick, para, bids[index]['price'])
 
-                        para = "bidVolume" + str(index+1)
-                        setattr(tick, para, float(bids[index]['undeal']))
+                        para = "bidVolume" + str(len(bids)-index)
+                        setattr(tick, para, float(bids[index]['undeal']))  # float can sum
                 except Exception as e:
                     print(e)
 
+                # 买单
                 try:
                     for index in range(depth):
                         if index == len(asks):
@@ -682,239 +695,3 @@ class UcoinRestApi(RestClient):
         self.gateway.onError(e)
 
         sys.stderr.write(self.exceptionDetail(exceptionType, exceptionValue, tb, request))
-
-class WebsocketApi(UcoinWebsocketApi):
-    def __init__(self, gateway):
-        #Constructor
-        super().__init__()
-
-        self.gateway = gateway
-        self.gatewayName = gateway.gatewayName
-
-        self.apiKey = ''
-        self.account = ''
-        self.password = ''
-        self.symbols = ''
-
-        self.accountDict = gateway.accountDict
-        self.orderDict = gateway.orderDict
-        self.localOrderDict = gateway.localOrderDict
-
-        self.tradeID = 0
-        self.callbackDict = {}
-        self.channelSymbolDict = {}
-        self.tickDict = {}
-        self.dealDict = {}
-
-    # ----------------------------------------------------------------------
-    def unpackData(self, data):
-        #重载
-        return json.loads(zlib.decompress(data, -zlib.MAX_WBITS))
-
-    # ----------------------------------------------------------------------
-    def connect(self, apiKey, account, password, symbols):
-        self.apiKey = apiKey
-        self.account = account
-        self.password = password
-        self.symbols = symbols
-
-        self.start()
-        #for symbol in symbols:
-        #    self.subscribeMarketData(symbol)
-
-    def subscribeMarketData(self, symbol):
-        # 订阅行情
-        for symbol in self.symbols:
-            tick = VtTickData()
-            tick.gatewayName = self.gatewayName
-            tick.symbol = symbol
-            tick.exchange = "UCOIN"
-            tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
-            self.tickDict[symbol] = tick
-        #
-
-    def onConnect(self):
-        #连接回调
-        self.gateway.writeLog(u'Websocket API连接成功')
-        self.login()
-
-    def onData(self, data):
-        #数据回调
-        if 'Event' in data:
-            if data['Event'] == "login":
-                if data["Result"]:
-                    # 连接成功,开始订阅
-                    # return
-                    self.subscribe()
-                else:
-                    self.gateway.writeLog("login error ", data["Errorcode"])
-        elif 'channel' in data:
-            # print(data)
-            if 'depth' in data['channel']:
-                self.onDepth(data)
-            elif 'ticker' in data['channel']:
-                self.onTick(data)
-            elif 'deals' in data['channel']:
-                self.onDeals(data)
-            elif 'balance' in data['channel']:
-                self.onBalance(data)
-            elif 'order' in data['channel']:
-                self.onOrder(data)
-
-    def onOrder(self, data):
-        self.gateway.processQueueOrder(data, historyFlag=0)
-
-    # ----------------------------------------------------------------------
-    def onDisconnected(self):
-        #连接回调
-        self.gateway.writeLog(u'Websocket API连接断开')
-
-    # ----------------------------------------------------------------------
-    def onPacket(self, packet):
-        # 数据回调
-        d = packet[0]
-
-        channel = d['channel']
-        callback = self.callbackDict.get(channel, None)
-        if callback:
-            callback(d)
-
-    @staticmethod
-    def sign(apiKey):
-        # 拼接apikey = {你的apikey} & secret_key = {你的secretkey} 进行MD5，结果大写
-        convertStr = "apikey=" + apiKey + "&secret_key=" + secretkey
-        return hashlib.md5(convertStr.encode()).hexdigest().upper()
-
-    def login(self):
-        try:
-            signature = self.sign(self.apiKey)
-            req = {
-                "event": "login",
-                "parameters": {
-                    "ApiKey": self.apiKey,
-                    "Sign": signature
-                }
-            }
-            self.sendReq(req)
-        except Exception as e:
-            print(e)
-
-    def subscribe(self):
-        # 初始化
-        for symbol in self.symbols:
-            #l.append('ticker.' + symbol)
-            #l.append('depth.L20.' + symbol)
-            tick = VtTickData()
-            tick.gatewayName = self.gatewayName
-            tick.symbol = symbol
-            tick.exchange = EXCHANGE_UCOIN
-            tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
-            self.tickDict[symbol] = tick
-            self.dealDict[symbol] = tick
-
-        for symbol in self.symbols:
-            # 订阅行情深度,支持5，10，20档
-            channel = "idcm_sub_spot_" + symbol + "_depth_20"
-            req = {
-                'event': 'addChannel',
-                'channel': channel
-            }
-            self.sendReq(req)
-
-            # 订阅行情数据
-            channel = "idcm_sub_spot_" + symbol + "_ticker"
-            req = {
-                'event': 'addChannel',
-                'channel': channel
-            }
-            self.sendReq(req)
-
-            # 订阅成交记录
-            channel = "idcm_sub_spot_" + symbol + "_deals"
-            req = {
-                'event': 'addChannel',
-                'channel': channel
-            }
-            self.sendReq(req)
-
-    # ----------------------------------------------------------------------
-    def onTick(self, d):
-        data = d['data']
-
-        symbol = d['channel'].split('_')[3]
-        tick = self.tickDict[symbol]
-        tick.lastPrice = float(data['last'])
-        tick.highPrice = float(data['high'])
-        tick.lowPrice = float(data['low'])
-        tick.volume = float(data['vol'])
-
-        self.gateway.onTick(tick)
-
-    def onDeals(self, d):
-        data = d['data'][0]
-
-        symbol = d['channel'].split('_')[3]
-        deal = self.dealDict[symbol]
-        deal.lastPrice = float(data['price'])
-        deal.volume = float(data['amount'])
-        deal.type = dealStatusMapReverse[data['type']]
-        try:
-            deal.datetime = datetime.fromtimestamp(data['timestamp'])
-            deal.time = deal.datetime.strftime('%H:%M:%S')
-            self.gateway.onDeal(deal)
-        except Exception as e:
-            print(e)
-
-    # ----------------------------------------------------------------------
-    def onDepth(self, d):
-        try:
-            symbol = d['channel'].split('_')[3]
-            tick = self.tickDict[symbol]
-
-            bids = d['data']['bids']
-            asks = d['data']['asks']
-
-            depth = 20
-            try:
-                for index in range(depth):
-                    if index == len(bids):
-                        break
-                    para = "bidPrice" + str(index+1)
-                    setattr(tick, para, bids[index]['Price'])
-
-                    para = "bidVolume" + str(index+1)
-                    setattr(tick, para, bids[index]['Amount'])
-            except Exception as e:
-                print(e)
-
-            try:
-                for index in range(depth):
-                    if index == len(asks):
-                        break
-                    para = "askPrice" + str(index+1)
-                    setattr(tick, para, asks[index]['Price'])
-
-                    para = "askVolume" + str(index+1)
-                    setattr(tick, para, asks[index]['Amount'])
-            except Exception as e:
-                print(e)
-
-            tick.datetime = datetime.fromtimestamp(d['timestamp'])
-            tick.date = tick.datetime.strftime('%Y%m%d')
-            tick.time = tick.datetime.strftime('%H:%M:%S')
-
-            self.gateway.onTick(copy(tick))
-        except Exception as e:
-            print(e)
-
-    def onBalance(self, d):
-        currency = d['channel'].split('_')[3]  # format:idcm_sub_spot_ETH_balance
-        account = self.accountDict.get(currency, None)
-
-        data = d['data']
-        account.available = float(data['free'])
-        account.margin = float(data['freezed'])
-
-        account.balance = account.margin + account.available
-
-        self.gateway.onAccount(account)
