@@ -329,7 +329,10 @@ class UcoinRestApi(RestClient):
         self.login()
         self.queryAccount()
         self.queryHistoryOrder()
+        if hasattr(self, 'reqThread'):
+            self.reqThread.join(timeout=0)
         self.reqThread = Thread(target=self.subscribeMarketData)
+        self.reqThread.setDaemon(True)
         self.reqThread.start()
         #self.subscribeMarketData()
 
@@ -338,8 +341,9 @@ class UcoinRestApi(RestClient):
         强制停止运行，未发出的请求都会被暂停（仍处于队列中）
         :return:
         """
+        if hasattr(self, 'reqThread'):
+            self.reqThread.join(timeout=0)
         self._active = False
-        self.reqThread.join(timeout=1)
 
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
@@ -451,7 +455,7 @@ class UcoinRestApi(RestClient):
             print(e)
 
     def onDepth(self, data, request):
-        print(data)
+        #print(data)
         try:
             if data['code'] == '0':
                 data = data['data']
