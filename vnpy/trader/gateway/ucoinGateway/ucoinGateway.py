@@ -87,6 +87,7 @@ class UcoinGateway(VtGateway):
 
         self.fileName = 'GatewayConfig/' + self.gatewayName + '_connect.json'
         self.filePath = getJsonPath(self.fileName, __file__)
+
         #symbols_filepath = os.getcwd() + '\GatewayConfig' + '/' + self.fileName
 
     def connect(self):
@@ -292,12 +293,6 @@ class UcoinRestApi(RestClient):
         #signature = self.generateSignature(inputdata, self.apiKey)
 
         # 添加表头
-        #request.headers = {
-        #    'X-IDCM-APIKEY': self.apiKey,
-        #    'X-IDCM-SIGNATURE': signature,
-        #    'X-IDCM-INPUT': inputdata,
-        #    'Content-Type': 'application/json'
-        #}
         authString = 'Bearer '+ self.access_token
         if self.access_token is not '':
             request.headers = {
@@ -332,11 +327,11 @@ class UcoinRestApi(RestClient):
         self.init(REST_HOST)
         self.start(sessionCount)
         self.login()
-        #self.queryTicker()
         #self.reqThread = Thread(target=self.queryAccount)
         #self.reqThread.start()
         self.queryAccount()
         self.queryHistoryOrder()
+        self.subscribeMarketData()
 
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
@@ -363,7 +358,6 @@ class UcoinRestApi(RestClient):
             order = VtOrderData()
             order.gatewayName = self.gatewayName
             order.symbol = orderReq.symbol
-            #order.exchange = 'IDCM'
             order.vtSymbol = '.'.join([order.symbol, order.exchange])
             #order.orderID = localID
             order.vtOrderID = vtOrderID
@@ -382,6 +376,7 @@ class UcoinRestApi(RestClient):
             self.addRequest('POST', url,
                             callback=self.onSendOrder,
                             data=data,
+                            #nFailed=self.onSendOrderFailed,
                             extra=localID)
         except Exception as e:
             print(e)
@@ -401,11 +396,92 @@ class UcoinRestApi(RestClient):
             print(e)
         self.addRequest('POST', '/api/open/trade/cancelOrder', callback=self.onCancelOrder, data=data, extra=cancelReq)
 
-    # 获取IDCM最新币币行情数据
-    def queryTicker(self):
+    def subscribeMarketData(self):
+        # 订阅行情
+        for symbol in self.symbols:
+            tick = VtTickData()
+            tick.gatewayName = self.gatewayName
+            tick.symbol = symbol
+            tick.exchange = "UCOIN"
+            tick.vtSymbol = tick.exchange + '.' + tick.symbol
+            self.tickDict[symbol] = tick
+        self.queryTick()
+        self.queryDepth()
+
+    # 获取UCOIN最新币币行情数据
+    def queryTick(self):
         """"""
-        self.addRequest('POST', path = '/api/v1/getticker', data={"Symbol": "BTC/USDT"},
-            callback=self.onqueryTicker)
+        try:
+            for symbol in self.symbols:
+                path = '/api/open/ticker/' + symbol
+                self.addRequest('GET', path = path,
+                    callback=self.onTick)
+        except Exception as e:
+            print(e)
+
+    def queryDepth(self):
+        for symbol in self.symbols:
+            path = '/api/open/depth/' + symbol
+            self.addRequest('GET', path = path, data={"size": "40"},
+                callback=self.onDepth, extra=symbol)
+
+    def onTick(self, data, request):
+        try:
+            if data['code'] == '0':
+                data = data['data']
+                symbol = data['name']
+                tick = self.tickDict[symbol]
+                tick.lastPrice = float(data['price'])
+                tick.highPrice = float(data['high'])
+                tick.lowPrice = float(data['low'])
+                tick.volume = float(data['number'])
+
+                self.gateway.onTick(tick)
+        except Exception as e:
+            print(e)
+
+    def onDepth(self, data, request):
+        try:
+            if data['code'] == '0':
+                data = data['data']
+                symbol = request.extra
+                tick = self.tickDict[symbol]
+
+                bids = data['bids']
+                asks = data['asks']
+
+                depth = 20
+                try:
+                    for index in range(depth):
+                        if index == len(bids):
+                            break
+                        para = "bidPrice" + str(index+1)
+                        setattr(tick, para, bids[index]['price'])
+
+                        para = "bidVolume" + str(index+1)
+                        setattr(tick, para, float(bids[index]['undeal']))
+                except Exception as e:
+                    print(e)
+
+                try:
+                    for index in range(depth):
+                        if index == len(asks):
+                            break
+                        para = "askPrice" + str(index+1)
+                        setattr(tick, para, asks[index]['price'])
+
+                        para = "askVolume" + str(index+1)
+                        setattr(tick, para, float(asks[index]['undeal']))
+                except Exception as e:
+                    print(e)
+
+                #tick.datetime = datetime.fromtimestamp(d['timestamp'])
+                #tick.date = tick.datetime.strftime('%Y%m%d')
+                #tick.time = tick.datetime.strftime('%H:%M:%S')
+
+                self.gateway.onTick(copy(tick))
+        except Exception as e:
+            print(e)
 
     # ----------------------------------------------------------------------
     def queryAccount(self):
@@ -485,7 +561,7 @@ class UcoinRestApi(RestClient):
                     order.vtOrderID = '.'.join([order.gatewayName, order.orderID])
 
                     order.symbol = d['symbol']
-                    order.exchange = EXCHANGE_IDCM
+                    order.exchange = EXCHANGE_UCOIN
                     order.vtSymbol = '.'.join([order.symbol, order.exchange])
 
                     order.price = float(d['price'])  # 委托价格
@@ -507,39 +583,21 @@ class UcoinRestApi(RestClient):
                 print(e)
         else:
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             except Exception as e:
                 msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
 
     def onQueryHistoryOrder(self, data, request):
-        print(data)
+        #print(data)
         if data['code'] == '0':
             self.gateway.processQueueOrder(data, symbol=request.extra)
         else:
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             except Exception as e:
                 msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
-
-    # ----------------------------------------------------------------------
-    def onSendOrderFailed(self, data, request):
-        """
-        下单失败回调：服务器明确告知下单失败
-        """
-        order = request.extra
-        order.status = STATUS_REJECTED
-        self.gateway.onOrder(order)
-
-    # ----------------------------------------------------------------------
-    def onSendOrderError(self, exceptionType, exceptionValue, tb, request):
-        """
-        下单失败回调：连接错误
-        """
-        order = request.extra
-        order.status = STATUS_REJECTED
-        self.gateway.onOrder(order)
 
     # ----------------------------------------------------------------------
     def onSendOrder(self, data, request):
@@ -547,7 +605,6 @@ class UcoinRestApi(RestClient):
         order = self.orderBufDict[localID]
 
         if data['code'] != '0':
-            print(data['code'])
             try:
                 msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             except Exception as e:
@@ -571,6 +628,24 @@ class UcoinRestApi(RestClient):
             #    self.cancelOrder(req)
 
     # ----------------------------------------------------------------------
+    def onSendOrderFailed(self, data, request):
+        """
+        下单失败回调：服务器明确告知下单失败
+        """
+        order = request.extra
+        order.status = STATUS_REJECTED
+        self.gateway.onOrder(order)
+
+    # ----------------------------------------------------------------------
+    def onSendOrderError(self, exceptionType, exceptionValue, tb, request):
+        """
+        下单失败回调：连接错误
+        """
+        order = request.extra
+        order.status = STATUS_REJECTED
+        self.gateway.onOrder(order)
+
+    # ----------------------------------------------------------------------
     def onCancelOrder(self, data, request):
         if data['code'] != '0':
             try:
@@ -592,9 +667,10 @@ class UcoinRestApi(RestClient):
         e = VtErrorData()
         e.gatewayName = self.gatewayName
         e.errorID = httpStatusCode
-        e.errorMsg = request.response.text
+        print(json.loads(request.response.text)['code'])
+        print(json.loads(request.response.text)['msg'])
+        e.errorMsg = json.loads(request.response.text)['code'] + ',' + json.loads(request.response.text)['msg']
         self.gateway.onError(e)
-        print(request.response.text)
 
     # ----------------------------------------------------------------------
     def onError(self, exceptionType, exceptionValue, tb, request):
@@ -648,12 +724,14 @@ class WebsocketApi(UcoinWebsocketApi):
 
     def subscribeMarketData(self, symbol):
         # 订阅行情
-        tick = VtTickData()
-        tick.gatewayName = self.gatewayName
-        tick.symbol = symbol
-        tick.exchange = "UCOIN"
-        tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
-        self.tickDict[symbol] = tick
+        for symbol in self.symbols:
+            tick = VtTickData()
+            tick.gatewayName = self.gatewayName
+            tick.symbol = symbol
+            tick.exchange = "UCOIN"
+            tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
+            self.tickDict[symbol] = tick
+        #
 
     def onConnect(self):
         #连接回调
@@ -729,7 +807,7 @@ class WebsocketApi(UcoinWebsocketApi):
             tick = VtTickData()
             tick.gatewayName = self.gatewayName
             tick.symbol = symbol
-            tick.exchange = EXCHANGE_IDCM
+            tick.exchange = EXCHANGE_UCOIN
             tick.vtSymbol = '.'.join([tick.symbol, tick.exchange])
             self.tickDict[symbol] = tick
             self.dealDict[symbol] = tick
