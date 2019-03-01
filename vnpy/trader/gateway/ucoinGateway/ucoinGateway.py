@@ -9,18 +9,17 @@ import json
 import hashlib
 import hmac
 import sys
-import base64
-import zlib
 from datetime import timedelta, datetime
 from copy import copy
 
 from vnpy.api.rest import RestClient, Request
-from vnpy.api.websocket import WebsocketClient
-from vnpy.api.ucoin import UcoinWebsocketApi
+#from vnpy.api.websocket import WebsocketClient
+#from vnpy.api.ucoin import UcoinWebsocketApi
 from vnpy.trader.vtGateway import *
 from vnpy.trader.vtFunction import getJsonPath
 
 from threading import Thread
+#import asyncio
 
 REST_HOST = 'http://testapi.ucoin.pw'  # 测试网
 WEBSOCKET_HOST = 'http://testapi.ucoin.pw'
@@ -63,7 +62,7 @@ errMsgMap[10003] = '该连接已经请求了其他用户的实时交易数据'
 
 def getErrMsg(errcode):
     return errMsgMap[errcode]
-    msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsg)
+    msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsg)
     self.gateway.writeLog(msg)
 
 
@@ -97,7 +96,7 @@ class UcoinGateway(VtGateway):
         except IOError:
             log = VtLogData()
             log.gatewayName = self.gatewayName
-            log.logContent = u'读取连接配置出错，请检查'
+            log.logContent = '读取连接配置出错，请检查'
             self.onLog(log)
             return
 
@@ -114,7 +113,7 @@ class UcoinGateway(VtGateway):
         except KeyError:
             log = VtLogData()
             log.gatewayName = self.gatewayName
-            log.logContent = u'连接配置缺少字段，请检查'
+            log.logContent = '连接配置缺少字段，请检查'
             self.onLog(log)
             return
 
@@ -256,8 +255,6 @@ class UcoinRestApi(RestClient):
         self.orderBufDict = {}
         self.tickDict = {}
 
-        #self.queryAccountThread = None
-
     def login(self):
         try:
             currentTime = str(int(time.time()))
@@ -280,9 +277,9 @@ class UcoinRestApi(RestClient):
             self.access_token = data['data']['access_token']
         else:
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
             except Exception as e:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
 
     def sign(self, request):
@@ -329,9 +326,7 @@ class UcoinRestApi(RestClient):
         self.login()
         self.queryAccount()
         self.queryHistoryOrder()
-        if hasattr(self, 'reqThread'):
-            self.reqThread.join(timeout=0)
-        self.reqThread = Thread(target=self.subscribeMarketData)
+        self.reqThread = Thread(target=self.subscribeMarketData, name='subscribeMarketData')
         self.reqThread.setDaemon(True)
         self.reqThread.start()
         #self.subscribeMarketData()
@@ -421,6 +416,7 @@ class UcoinRestApi(RestClient):
             self.queryTick()
             self.queryDepth()
             time.sleep(1)
+            #await asyncio.sleep(1)
 
     # 获取UCOIN最新币币行情数据
     def queryTick(self):
@@ -530,7 +526,7 @@ class UcoinRestApi(RestClient):
             self.addRequest('GET', path,
                             callback=self.onQueryHistoryOrder,extra=symbol)
 
-        self.gateway.writeLog(u'历史订单查询成功')
+        self.gateway.writeLog('历史订单查询成功')
 
     def onQueryAccount(self, data, request):
         if data['code'] == '0':
@@ -553,9 +549,9 @@ class UcoinRestApi(RestClient):
             self.gateway.onAccount(account)
         else:
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             except Exception as e:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
 
     def onQueryOrder(self, data, request):
@@ -600,9 +596,9 @@ class UcoinRestApi(RestClient):
                 print(e)
         else:
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             except Exception as e:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
 
     def onQueryHistoryOrder(self, data, request):
@@ -611,9 +607,9 @@ class UcoinRestApi(RestClient):
             self.gateway.processQueueOrder(data, symbol=request.extra)
         else:
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             except Exception as e:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
 
     # ----------------------------------------------------------------------
@@ -625,7 +621,7 @@ class UcoinRestApi(RestClient):
             try:
                 msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             except Exception as e:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
 
             order.status = STATUS_REJECTED
@@ -666,9 +662,9 @@ class UcoinRestApi(RestClient):
     def onCancelOrder(self, data, request):
         if data['code'] != '0':
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             except Exception as e:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
         else:
             order = request.extra
