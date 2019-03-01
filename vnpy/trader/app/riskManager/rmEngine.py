@@ -26,7 +26,7 @@ class RmEngine(object):
     settingFileName = 'RM_setting.json'
     settingFilePath = getJsonPath(settingFileName, __file__)
 
-    name = u'风控模块'
+    name = '风控模块'
 
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine):
@@ -186,13 +186,13 @@ class RmEngine(object):
 
           # gateway.symbol
         if accountIndex not in self.settingsDict.keys():
-            self.writeRiskLog(u'账户%s限额配置缺失，请检查，报警' % accountIndex)
+            self.writeRiskLog('账户%s限额配置缺失，请检查，报警' % accountIndex)
             return False
 
         if (self.accountAvailable[accountIndex] - orderReq.volume) < float(self.settingsDict[accountIndex]['warnLimit']):
-            self.writeRiskLog(u'账户%s余额低，报警' %accountIndex)
+            self.writeRiskLog('账户%s余额低，报警' %accountIndex)
         if (self.accountAvailable[accountIndex] - orderReq.volume) < float(self.settingsDict[accountIndex]['minLimit']):
-            self.writeRiskLog(u'账户%s余额不足，委托拒绝' %accountIndex)
+            self.writeRiskLog('账户%s余额不足，委托拒绝' %accountIndex)
             return False
         # 对于通过风控的委托，增加流控计数
         self.orderFlowCount += 1
@@ -203,13 +203,13 @@ class RmEngine(object):
     def clearOrderFlowCount(self):
         """清空流控计数"""
         self.orderFlowCount = 0
-        self.writeRiskLog(u'清空流控计数')
+        self.writeRiskLog('清空流控计数')
 
     #----------------------------------------------------------------------
     def clearTradeCount(self):
         """清空成交数量计数"""
         self.tradeCount = 0
-        self.writeRiskLog(u'清空总成交计数')
+        self.writeRiskLog('清空总成交计数')
 
     #----------------------------------------------------------------------
     def setOrderFlowLimit(self, n):
@@ -252,9 +252,9 @@ class RmEngine(object):
         self.active = not self.active
 
         if self.active:
-            self.writeRiskLog(u'风险管理功能启动')
+            self.writeRiskLog('风险管理功能启动')
         else:
-            self.writeRiskLog(u'风险管理功能停止')
+            self.writeRiskLog('风险管理功能停止')
             
     #----------------------------------------------------------------------
     def stop(self):
