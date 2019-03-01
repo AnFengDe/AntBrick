@@ -314,7 +314,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.restoreGeometry(geometry)
         # 异常
         else:
-            content = u'载入窗口配置异常，请检查'
+            content = '载入窗口配置异常，请检查'
             self.mainEngine.writeLog(content)
         
     #----------------------------------------------------------------------
