@@ -197,7 +197,7 @@ class BasicMonitor(QtWidgets.QTableWidget):
     基础监控
     
     headerDict中的值对应的字典格式如下
-    {'chinese': u'中文名', 'cellType': BasicCell}
+    {'chinese': '中文名', 'cellType': BasicCell}
     
     """
     signal = QtCore.Signal(type(Event()))
@@ -745,7 +745,7 @@ class TradingWidget(QtWidgets.QFrame):
         labelDirection = QtWidgets.QLabel(vtText.DIRECTION)
         labelOffset = QtWidgets.QLabel(vtText.OFFSET)
         labelPrice = QtWidgets.QLabel(vtText.PRICE)
-        self.checkFixed = QtWidgets.QCheckBox(u'')  # 价格固定选择框
+        self.checkFixed = QtWidgets.QCheckBox('')  # 价格固定选择框
         labelVolume = QtWidgets.QLabel(vtText.VOLUME)
         labelPriceType = QtWidgets.QLabel(vtText.PRICE_TYPE)
         labelExchange = QtWidgets.QLabel(vtText.EXCHANGE) 
