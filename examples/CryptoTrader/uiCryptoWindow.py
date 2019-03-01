@@ -131,7 +131,7 @@ class MainWindow(QtWidgets.QMainWindow):
         helpMenu.addSeparator()
         helpMenu.addAction(self.createAction(vtText.TEST, self.test, loadIconPath('test.ico')))
 
-        self.mainEngine.connect("IDCM")  # 自动连接IDCM交易所
+        #self.mainEngine.connect("IDCM")  # 自动连接IDCM交易所
 
     #----------------------------------------------------------------------
     def initStatusBar(self):
@@ -294,7 +294,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.restoreGeometry(geometry)
         # 异常
         else:
-            content = u'载入窗口配置异常，请检查'
+            content = '载入窗口配置异常，请检查'
             self.mainEngine.writeLog(content)
         
     #----------------------------------------------------------------------
