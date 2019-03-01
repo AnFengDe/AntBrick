@@ -182,7 +182,7 @@ class BasicMonitor(QtWidgets.QTableWidget):
     基础监控
     
     headerDict中的值对应的字典格式如下
-    {'chinese': u'中文名', 'cellType': BasicCell}
+    {'chinese': '中文名', 'cellType': BasicCell}
     
     """
     signal = QtCore.Signal(type(Event()))
@@ -488,7 +488,7 @@ class LogMonitor(BasicMonitor):
     def processErrorEvent(self, event):
         """"""
         error = event.dict_['data']
-        logContent = u'发生错误，错误代码:%s，错误信息:%s' %(error.errorID, error.errorMsg)
+        logContent = '发生错误，错误代码:%s，错误信息:%s' %(error.errorID, error.errorMsg)
         
         self.insertRow(0)
         cellLogTime = BasicCell(error.errorTime)
@@ -721,39 +721,39 @@ class DepthMonitor(QtWidgets.QTableWidget):
     #----------------------------------------------------------------------
     def initUi(self):
         """"""
-        horizonLabels = [u'价格',
-                  u'数量',
-                  u'累计']
+        horizonLabels = ['价格',
+                  '数量',
+                  '累计']
 
         verticalLabels = []
         for index in range(self.depth):
-            verticalLabels.append(u'卖'+str(self.depth - index))
-        verticalLabels.append(u'当前')
+            verticalLabels.append('卖'+str(self.depth - index))
+        verticalLabels.append('当前')
         for index in range(self.depth):
-            verticalLabels.append(u'买' + str(index+1))
+            verticalLabels.append('买' + str(index+1))
 
             """
-            u'卖十',
-            u'卖九',
-            u'卖八',
-            u'卖七',
-            u'卖六',
-              u'卖五',
-              u'卖四',
-              u'卖三',
-              u'卖二',
-              u'卖一',
-              u'当前',
-                u'买一',
-                u'买二',
-                u'买三',
-                u'买四',
-                u'买五',
-        u'买六',
-        u'买七',
-        u'买八',
-        u'买九',
-        u'买十']
+            '卖十',
+            '卖九',
+            '卖八',
+            '卖七',
+            '卖六',
+              '卖五',
+              '卖四',
+              '卖三',
+              '卖二',
+              '卖一',
+              '当前',
+                '买一',
+                '买二',
+                '买三',
+                '买四',
+                '买五',
+        '买六',
+        '买七',
+        '买八',
+        '买九',
+        '买十']
         """
         self.setColumnCount(len(horizonLabels))
         self.setRowCount(len(verticalLabels))
@@ -1073,9 +1073,9 @@ class TradingWidget(QtWidgets.QFrame):
         # 右边委托区域
         labelGateway = QtWidgets.QLabel(vtText.GATEWAY)
         labelOrderType = QtWidgets.QLabel(vtText.ORDER_TYPE)
-        labelSymbol = QtWidgets.QLabel(u'交易对')
+        labelSymbol = QtWidgets.QLabel('交易对')
         labelPrice = QtWidgets.QLabel(vtText.PRICE)
-        labelVolume = QtWidgets.QLabel(u'数量')
+        labelVolume = QtWidgets.QLabel('数量')
 
         # 交易所
         self.comboGateway = QtWidgets.QComboBox()
@@ -1115,8 +1115,8 @@ class TradingWidget(QtWidgets.QFrame):
         self.dealsMonitor = DealsMonitor(self.mainEngine, self.eventEngine)
 
         # 发单按钮
-        buttonBuy = QtWidgets.QPushButton(u'买入')
-        buttonSell = QtWidgets.QPushButton(u'卖出')
+        buttonBuy = QtWidgets.QPushButton('买入')
+        buttonSell = QtWidgets.QPushButton('卖出')
         buttonCancelAll = QtWidgets.QPushButton(vtText.CANCEL_ALL)
         
         size = buttonBuy.sizeHint()
