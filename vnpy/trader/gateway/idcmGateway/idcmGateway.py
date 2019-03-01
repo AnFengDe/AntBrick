@@ -95,7 +95,7 @@ errMsgMap[51112] = '申报金额无效'
 
 def getErrMsg(errcode):
     return errMsgMap[errcode]
-    msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsg)
+    msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsg)
     self.gateway.writeLog(msg)
 
 """
@@ -139,7 +139,7 @@ class IdcmGateway(VtGateway):
         except IOError:
             log = VtLogData()
             log.gatewayName = self.gatewayName
-            log.logContent = u'读取连接配置出错，请检查'
+            log.logContent = '读取连接配置出错，请检查'
             self.onLog(log)
             return
 
@@ -154,7 +154,7 @@ class IdcmGateway(VtGateway):
         except KeyError:
             log = VtLogData()
             log.gatewayName = self.gatewayName
-            log.logContent = u'连接配置缺少字段，请检查'
+            log.logContent = '连接配置缺少字段，请检查'
             self.onLog(log)
             return
 
@@ -377,7 +377,7 @@ class IdcmRestApi(RestClient):
             order.direction = orderReq.direction
             order.ordertType = orderReq.orderType
             order.price = orderReq.price
-            order.amount = orderReq.volume
+            order.volume = orderReq.volume
             #order.localID = localID
             # order.totalVolume = orderReq.volume * orderReq.price
             order.status = STATUS_UNKNOWN
@@ -465,7 +465,7 @@ class IdcmRestApi(RestClient):
             }
             self.addRequest('POST', path, data=req,
                             callback=self.onQueryHistoryOrder)
-        self.gateway.writeLog(u'历史订单查询成功')
+        self.gateway.writeLog('历史订单查询成功')
 
     def onQueryAccount(self, data, request):
         """"""
@@ -492,12 +492,12 @@ class IdcmRestApi(RestClient):
 
             #self.queryOrder()
             #self.queryHistoryOrder()
-            #self.gateway.writeLog(u'资金信息查询成功')
+            #self.gateway.writeLog('资金信息查询成功')
         else:
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
             except Exception as e:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
             return
 
@@ -543,9 +543,9 @@ class IdcmRestApi(RestClient):
                 print(e)
         else:
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
             except Exception as e:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
 
     def onQueryHistoryOrder(self, data, request):
@@ -553,9 +553,9 @@ class IdcmRestApi(RestClient):
             self.gateway.processQueueOrder(data, historyFlag=1)
         else:
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
             except Exception as e:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
 
     # ----------------------------------------------------------------------
@@ -583,9 +583,9 @@ class IdcmRestApi(RestClient):
 
         if data['result'] != 1:
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
             except Exception as e:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
 
             order.status = STATUS_REJECTED
@@ -608,9 +608,9 @@ class IdcmRestApi(RestClient):
     def onCancelOrder(self, data, request):
         if data['result'] != 1:
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
             except Exception as e:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
         else:
             order = request.extra
@@ -620,9 +620,9 @@ class IdcmRestApi(RestClient):
     def onCancelAllOrders(self, data, request):
         if data['result'] != 1:
             try:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
             except Exception as e:
-                msg = u'错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
         else:
             return
@@ -706,7 +706,7 @@ class WebsocketApi(IdcmWebsocketApi):
 
     def onConnect(self):
         """连接回调"""
-        self.gateway.writeLog(u'Websocket API连接成功')
+        self.gateway.writeLog('Websocket API连接成功')
         self.login()
 
     def onData(self, data):
@@ -738,7 +738,7 @@ class WebsocketApi(IdcmWebsocketApi):
     # ----------------------------------------------------------------------
     def onDisconnected(self):
         """连接回调"""
-        self.gateway.writeLog(u'Websocket API连接断开')
+        self.gateway.writeLog('Websocket API连接断开')
 
     # ----------------------------------------------------------------------
     def onPacket(self, packet):
