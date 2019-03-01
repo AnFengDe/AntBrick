@@ -5,7 +5,7 @@ from .followBtcEngine import FollowBtcEngine
 from .uiFollowBtcWidget import FollowBtcEngineManager
 
 appName = 'FollowBtcSelfTrade'
-appDisplayName = u'跟随BTC刷单'
+appDisplayName = '跟随BTC刷单'
 appEngine = FollowBtcEngine
 appWidget = FollowBtcEngineManager
 appIco = 'at.ico'
