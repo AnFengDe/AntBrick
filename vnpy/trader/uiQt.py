@@ -18,7 +18,7 @@ try:
     size = globalSetting['fontSize']
     BASIC_FONT = QtGui.QFont(family, size)
 except:
-    BASIC_FONT = QtGui.QFont(u'微软雅黑', 12)
+    BASIC_FONT = QtGui.QFont('微软雅黑', 12)
 
 #----------------------------------------------------------------------
 def createQApp():
