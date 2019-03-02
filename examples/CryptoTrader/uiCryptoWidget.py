@@ -705,6 +705,7 @@ class DepthMonitor(QtWidgets.QTableWidget):
         self.cellDict = {}
 
         self.depth = 20
+        self.verticalHeader().setDefaultSectionSize(16)
         self.initUi()
         self.setShowGrid(False)  # 不显示格子线
         #self.showMaximized()
@@ -712,7 +713,7 @@ class DepthMonitor(QtWidgets.QTableWidget):
         #self.setRowHeight(1,10)
         #self.setRowHeight(3,10)
         self.horizontalHeader().setFixedHeight(15)  # 设定顶部标题高度
-        self.verticalHeader().setDefaultSectionSize(16)
+        #self.verticalHeader().setDefaultSectionSize(16)
         self.verticalHeader().setStyleSheet("color:blue;background-color:yellow")
         #self.verticalHeader().setFixedHeight(200)
 
@@ -772,46 +773,55 @@ class DepthMonitor(QtWidgets.QTableWidget):
         # 单元格
         askColor = 'red'
         bidColor = 'green'
-        lastColor = 'orange'
+        lastColor = 'yellow'
         normalColor = 'white'
         sumColor = 'gray'
-        depth = self.depth
 
         # 价格
         col = 0
-        for index in range(depth):
-            cellName = "askPrice" + str(depth-index)
+        for index in range(self.depth):
+            cellName = "askPrice" + str(self.depth-index)
             self.addCell(cellName, index, col, askColor)
 
-        self.addCell('lastPrice', depth, col, lastColor)
+        # 当前价加粗显示
+        largeFont = QtGui.QFont('微软雅黑', 10)
+        self.addCell('lastPrice', self.depth, col, lastColor,font=largeFont)
+        self.setRowHeight(self.depth,40)
 
-        for index in range(depth):
+        for index in range(self.depth):
             cellName = "bidPrice"+str(index+1)
-            self.addCell(cellName, index+depth+1, col, bidColor)
+            self.addCell(cellName, index + self.depth + 1, col, bidColor)
 
         # 数量
         col = 1
-        for index in range(depth):
-            cellName = "askVolume"+str(depth-index)
+        for index in range(self.depth):
+            cellName = "askVolume"+str(self.depth - index)
             self.addCell(cellName, index, col, normalColor)
 
-        self.addCell('todayChange', depth, col, lastColor)
+        # 当前成交数量
+        #largeFont = QtGui.QFont('微软雅黑', 10)
+        #self.addCell('number', self.depth, col, lastColor, font=largeFont)
+        self.addCell('todayChange', self.depth, col, lastColor, font=largeFont)
+        #self.item(self.depth, 40).setFont(largeFont)
+        #->item(0, 0)->font().pointSize() = 9;
+        #self.setFont(largeFont)
+        #self.setCellWidget()
 
-        for index in range(depth):
+        for index in range(self.depth):
             cellName = "bidVolume"+str(index+1)
-            self.addCell(cellName, index+depth+1, col, normalColor)
+            self.addCell(cellName, index + self.depth + 1, col, normalColor)
 
         # 累计
         col = 2
-        for index in range(depth):
-            cellName = "askVolumeSum"+str(depth-index)
+        for index in range(self.depth):
+            cellName = "askVolumeSum"+str(self.depth-index)
             self.addCell(cellName, index, col, sumColor)
 
-        self.addCell('blank', depth, col, lastColor)
+        self.addCell('blank', self.depth, col, lastColor)
 
-        for index in range(depth):
+        for index in range(self.depth):
             cellName = "bidVolumeSum"+str(index+1)
-            self.addCell(cellName, index+depth+1, col, sumColor)
+            self.addCell(cellName, index+self.depth+1, col, sumColor)
 
         """        
         self.addCell('bidPrice1', 11, 0, bidColor)
@@ -871,7 +881,7 @@ class DepthMonitor(QtWidgets.QTableWidget):
         #self
 
     #----------------------------------------------------------------------
-    def addCell(self, name, row, col, color, alignment=None):
+    def addCell(self, name, row, col, color, alignment=None, font=None):
         """新增单元格"""
         cell = QtWidgets.QTableWidgetItem()
         #self.setFixedHeight(60)
@@ -885,9 +895,11 @@ class DepthMonitor(QtWidgets.QTableWidget):
             cell.setTextAlignment(alignment)
         else:
             cell.setTextAlignment(QtCore.Qt.AlignCenter)
+        if font:
+            cell.setFont(font)
     
     #----------------------------------------------------------------------
-    def updateCell(self, name, value, decimals=None, data=None):
+    def updateCell(self, name, value=0, decimals=None, data=None):
         """更新单元格"""
         if decimals is not None:
             text = '%.*f' %(decimals, value)
@@ -911,16 +923,16 @@ class DepthMonitor(QtWidgets.QTableWidget):
 
         for index in range(depth):
             cellName = "bidPrice" + str(index+1)
-            self.updateCell(cellName, getattr(tick, cellName), data=getattr(tick, cellName))
+            self.updateCell(cellName, getattr(tick, cellName, 0), data=getattr(tick, cellName))
 
             cellName = "bidVolume" + str(index+1)
-            self.updateCell(cellName, getattr(tick, cellName))
+            self.updateCell(cellName, getattr(tick, cellName, 0))
 
             cellName = "askPrice" + str(index+1)
-            self.updateCell(cellName, getattr(tick, cellName), data=getattr(tick, cellName))
+            self.updateCell(cellName, getattr(tick, cellName, 0), data=getattr(tick, cellName))
 
             cellName = "askVolume" + str(index+1)
-            self.updateCell(cellName, getattr(tick, cellName))
+            self.updateCell(cellName, getattr(tick, cellName, 0))
 
             cellName = "bidVolumeSum" + str(index+1)
             tick_cellName = "bidVolume" + str(index+1)
