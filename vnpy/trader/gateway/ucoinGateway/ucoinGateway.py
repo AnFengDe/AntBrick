@@ -462,29 +462,37 @@ class UcoinRestApi(RestClient):
                 asks = data['asks']
 
                 depth = 20
-                # 卖单
-                try:
-                    for index in range(depth):
-                        if index == len(bids):
-                            break
-                        para = "bidPrice" + str(len(bids)-index)
-                        setattr(tick, para, bids[index]['price'])
-
-                        para = "bidVolume" + str(len(bids)-index)
-                        setattr(tick, para, float(bids[index]['undeal']))  # float can sum
-                except Exception as e:
-                    print(e)
-
                 # 买单
                 try:
                     for index in range(depth):
-                        if index == len(asks):
-                            break
+                        para = "bidPrice" + str(index+1)
+                        if index >= len(bids):
+                            setattr(tick, para, 0)
+                        else:
+                            setattr(tick, para, bids[index]['price'])
+
+                        para = "bidVolume" + str(index+1)
+                        if index >= len(bids):
+                            setattr(tick, para, 0)
+                        else:
+                            setattr(tick, para, float(bids[index]['undeal']))  # float can sum
+                except Exception as e:
+                    print(e)
+
+                # 卖单
+                try:
+                    for index in range(depth):
                         para = "askPrice" + str(index+1)
-                        setattr(tick, para, asks[index]['price'])
+                        if index >= len(asks):
+                            setattr(tick, para, 0)
+                        else:
+                            setattr(tick, para, asks[index]['price'])
 
                         para = "askVolume" + str(index+1)
-                        setattr(tick, para, float(asks[index]['undeal']))
+                        if index >= len(asks):
+                            setattr(tick, para, 0)
+                        else:
+                            setattr(tick, para, float(asks[index]['undeal']))
                 except Exception as e:
                     print(e)
 
