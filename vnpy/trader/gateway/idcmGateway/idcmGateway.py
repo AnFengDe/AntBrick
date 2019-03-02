@@ -848,27 +848,37 @@ class WebsocketApi(IdcmWebsocketApi):
             asks = d['data']['asks']
 
             depth = 20
+            # 买单
             try:
                 for index in range(depth):
-                    if index == len(bids):
-                        break
-                    para = "bidPrice" + str(index+1)
-                    setattr(tick, para, bids[index]['Price'])
+                    para = "bidPrice" + str(index + 1)
+                    if index >= len(bids):
+                        setattr(tick, para, 0)
+                    else:
+                        setattr(tick, para, bids[index]['price'])
 
-                    para = "bidVolume" + str(index+1)
-                    setattr(tick, para, bids[index]['Amount'])
+                    para = "bidVolume" + str(index + 1)
+                    if index >= len(bids):
+                        setattr(tick, para, 0)
+                    else:
+                        setattr(tick, para, float(bids[index]['undeal']))  # float can sum
             except Exception as e:
                 print(e)
 
+            # 卖单
             try:
                 for index in range(depth):
-                    if index == len(asks):
-                        break
-                    para = "askPrice" + str(index+1)
-                    setattr(tick, para, asks[index]['Price'])
+                    para = "askPrice" + str(index + 1)
+                    if index >= len(asks):
+                        setattr(tick, para, 0)
+                    else:
+                        setattr(tick, para, asks[index]['price'])
 
-                    para = "askVolume" + str(index+1)
-                    setattr(tick, para, asks[index]['Amount'])
+                    para = "askVolume" + str(index + 1)
+                    if index >= len(asks):
+                        setattr(tick, para, 0)
+                    else:
+                        setattr(tick, para, float(asks[index]['undeal']))
             except Exception as e:
                 print(e)
 
