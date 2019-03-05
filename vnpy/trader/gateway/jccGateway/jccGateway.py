@@ -57,6 +57,11 @@ class JccServerInfo(object):
     # ----------------------------------------------------------------------
     def __init__(self):
         """Constructor"""
+        self.exHosts = ''
+        self.infoHosts = ''
+        self.exchangeApiHost = ''
+        self.infoApiHost = ''
+
 
     def getServerInfo(self):
         http = urllib3.PoolManager()
@@ -385,7 +390,9 @@ class JccExchangeApi(RestClient):
         #while self._active:
         path = '/exchange/balances/' + self.account
         self.addRequest('GET', path, data=1,
-                        callback=self.onQueryAccount)
+                        callback=self.onQueryAccount,
+                        onFailed=self.onFailed,
+                        onError=self.onError)
             #time.sleep(5)  # 每隔5秒刷新账户信息
 
     def queryOrder(self):
@@ -686,7 +693,10 @@ class JccInfoApi(RestClient):
             # 获取市场深度
             path = "/info/depth/" + symbol + "/normal"  # normal-只获取最新10条记录 more-获取最新50条记录
             self.addRequest('GET', path, data=1,
-                            callback=self.onDepth, extra=symbol)
+                            callback=self.onDepth,
+                            onFailed=self.onFailed,
+                            onError=self.onError,
+                            extra=symbol)
 
         """
             # 订阅行情数据
@@ -737,55 +747,63 @@ class JccInfoApi(RestClient):
 
     # ----------------------------------------------------------------------
     def onDepth(self, data, request):
-        try:
-            symbol = request.extra
-            tick = self.tickDict[symbol]
-
-            bids = data['data']['bids']
-            asks = data['data']['asks']
-
-            depth = 20
-            # 买单
+        if data['code'] != '0':
             try:
-                for index in range(depth):
-                    para = "bidPrice" + str(index + 1)
-                    if index >= len(bids):
-                        setattr(tick, para, 0)
-                    else:
-                        setattr(tick, para, bids[index]['price'])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
+            except Exception as e:
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+            self.gateway.writeLog(msg)
+        else:
+            try:
+                symbol = request.extra
+                #print('symbol is %s'%(symbol))
+                tick = self.tickDict[symbol]
 
-                    para = "bidVolume" + str(index + 1)
-                    if index >= len(bids):
-                        setattr(tick, para, 0)
-                    else:
-                        setattr(tick, para, float(bids[index]['amount']))  # float can sum
+                bids = data['data']['bids']
+                asks = data['data']['asks']
+
+                depth = 20
+                # 买单
+                try:
+                    for index in range(depth):
+                        para = "bidPrice" + str(index + 1)
+                        if index >= len(bids):
+                            setattr(tick, para, 0)
+                        else:
+                            setattr(tick, para, bids[index]['price'])
+
+                        para = "bidVolume" + str(index + 1)
+                        if index >= len(bids):
+                            setattr(tick, para, 0)
+                        else:
+                            setattr(tick, para, float(bids[index]['amount']))  # float can sum
+                except Exception as e:
+                    print(e)
+
+                # 卖单
+                try:
+                    for index in range(depth):
+                        para = "askPrice" + str(index + 1)
+                        if index >= len(asks):
+                            setattr(tick, para, 0)
+                        else:
+                            setattr(tick, para, asks[index]['price'])
+
+                        para = "askVolume" + str(index + 1)
+                        if index >= len(asks):
+                            setattr(tick, para, 0)
+                        else:
+                            setattr(tick, para, float(asks[index]['amount']))
+                except Exception as e:
+                    print(e)
+
+                #tick.datetime = datetime.fromtimestamp(d['timestamp'])
+                #tick.date = tick.datetime.strftime('%Y%m%d')
+                #tick.time = tick.datetime.strftime('%H:%M:%S')
+
+                self.gateway.onTick(copy(tick))
             except Exception as e:
                 print(e)
-
-            # 卖单
-            try:
-                for index in range(depth):
-                    para = "askPrice" + str(index + 1)
-                    if index >= len(asks):
-                        setattr(tick, para, 0)
-                    else:
-                        setattr(tick, para, asks[index]['price'])
-
-                    para = "askVolume" + str(index + 1)
-                    if index >= len(asks):
-                        setattr(tick, para, 0)
-                    else:
-                        setattr(tick, para, float(asks[index]['amount']))
-            except Exception as e:
-                print(e)
-
-            #tick.datetime = datetime.fromtimestamp(d['timestamp'])
-            #tick.date = tick.datetime.strftime('%Y%m%d')
-            #tick.time = tick.datetime.strftime('%H:%M:%S')
-
-            self.gateway.onTick(copy(tick))
-        except Exception as e:
-            print(e)
 
     # ----------------------------------------------------------------------
     def onFailed(self, httpStatusCode, request):  # type:(int, Request)->None
