@@ -1,7 +1,7 @@
 {
-    "apiKey": "aa62673e-414b-432d-8715-8ada7e7b0e72",
-    "apiSecret": "9FE1DAD0A354C5DF67BA706C15E73DE7",
-    "passphrase": "234890",
+    "apiKey": "",
+    "apiSecret": "",
+    "passphrase": "",
     "leverage": 10,
     "sessionCount": 3,
     "trace": false
