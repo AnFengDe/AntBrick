@@ -15,23 +15,9 @@ vn.py是基于Python的开源量化交易系统开发框架，起源于国内私
 
     * 经过开源社区大量用户实盘检验，做到开箱即用的各类量化策略交易应用（包括逻辑层和界面层）：
     
-        * CtaStrategy：CTA策略引擎模块，在保持易用性的同时，允许用户针对CTA类策略运行过程中委托的报撤行为进行细粒度控制（降低交易滑点、实现高频策略）
-
-        * SpreadTrading：价差交易模块，根据用户的配置自动实现价差组合的深度行情以及持仓变化计算，同时内置的交易算法SniperAlgo可以满足大部分到价成交策略的需求，用户也可以基于AlgoTemplate开发更复杂的价差算法
-
-        * OptionMaster：期权交易模块，强大的期权投资组合管理功能，结合基于Cython开发的高效期权定价模型，支持毫秒级别的整体希腊值持仓风险计算，用户可以基于期权交易引擎OmEngine快速开发各类复杂期权交易应用
-
         * AlgoTrading：算法交易模块，提供多种常用的智能交易算法：TWAP、Sniper、BestLimit、Iceberg、Arbitrage等等，支持数据库配置保存、CSV文件加载启动以及RPC跨进程算法交易服务
 
-        * TradeCopy：复制交易模块，用户可以通过发布者Provider进程来对外提供交易策略信号（手动、策略均可），订阅者Subscriber进程根据收到的信号自动执行同步交易，简洁快速得实现一拖多账户交易功能
-
         * RiskManager：事前风控模块，负责在交易系统将任何交易请求发出到柜台前的一系列标准检查操作，支持用户自定义风控规则的扩展
-
-        * DataRecorder：实盘行情记录，支持Tick和K线数据的落地，用于策略开发回测以及实盘运行初始化
-
-        * RpcService：RPC跨进程调用服务，基于MainEngineProxy组件，用户可以如同开发单一进程应用搬开发多进程架构的复杂交易应用
-
-        * RtdService：EXCEL RTD服务组件，通过pyxll模块提供EXCEL表格系统对VN Trader系统内所有数据的访问
 
 2. Python交易API接口封装（vnpy.api），提供上述交易接口的底层对接实现
 
@@ -82,10 +68,15 @@ sudo /home/vnpy/anaconda2/bin/conda install -c quantopian ta-lib=0.4.9
 1. 井通注册账号**
 
 2. 找到vn.py应用示例目录examples，打开examples\CryptoTrader\GatewayConfig\JCC_connect.json，修改账号、密钥）
-
+#{
+	"account": "jn5Cz1E468HLBF1ESc6PmqG2UxdBoDBHpn",  # 账号
+	"secretKey": "sp5o1RYX54utAfzRqsxEA1S4gvHFU",     # 私钥
+	"sessionCount": 3,
+	"symbols": ["SWT-CNY","VCC-CNY"]                  # 交易对,会在屏幕下单区域显示
+} 
 3. 启动程序为examples\CryptoTrader\run.py，可在pyCharm中运行
 
-4.启动后点击****系统**--》**_连接JCC_**,即可连接JCC服务器
+4.启动后点击**_**_系统_**_--》**_连接JCC_**,即可连接JCC服务器
 
 ---
 
