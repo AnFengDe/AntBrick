@@ -37,7 +37,7 @@ class MainWindow(QtWidgets.QMainWindow):
     #----------------------------------------------------------------------
     def initUi(self):
         """初始化界面"""
-        self.setWindowTitle('FCS.ONE')
+        self.setWindowTitle('AntBrick')
         self.initCentral()
         self.initMenu()
         self.initStatusBar()
@@ -318,14 +318,13 @@ class AboutWidget(QtWidgets.QDialog):
     #----------------------------------------------------------------------
     def initUi(self):
         """"""
-        self.setWindowTitle(vtText.ABOUT + 'FCS.ONE')
+        self.setWindowTitle(vtText.ABOUT + 'AntBrick')
 
         text = u"""
-            Developed by FCS.
+            Developed by AntBrick Team.
 
             License：MIT
             
-            Website：FCS.ONE
             """
 
         label = QtWidgets.QLabel()
