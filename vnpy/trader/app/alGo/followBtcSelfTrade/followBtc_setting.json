@@ -1,8 +1,8 @@
 {
-    "UCOIN.FCS_UT": {
+    "IDCM.ETH_UT": {
         "active": true,
-        "gateway": "UCOIN",
-        "symbol": "FCS_UT",
+        "gateway": "IDCM",
+        "symbol": "ETH_UT",
         "symbolBasicPrice": 3.0,
         "symbolMinPrice": 3.0,
         "symbolMaxPrice": 6.0,
