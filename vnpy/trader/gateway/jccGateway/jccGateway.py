@@ -16,15 +16,11 @@ from datetime import timedelta, datetime
 from copy import copy
 
 from vnpy.api.rest import RestClient, Request
-#from vnpy.api.websocket import WebsocketClient
-from vnpy.api.jcc import JccWebsocketApi
 from vnpy.trader.vtGateway import *
 from vnpy.trader.vtFunction import getJsonPath
 
 #from threading import Thread
 
-#REST_HOST = 'https://api.JCC.cc:8323'
-#WEBSOCKET_HOST = 'wss://real.JCC.cc:10330/websocket'
 EXCHANGE_JCC = "JCC"
 
 # 内外盘
