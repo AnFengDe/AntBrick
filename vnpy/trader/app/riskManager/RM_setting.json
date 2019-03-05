@@ -1,9 +1,4 @@
 {
-    "IDCM.FCS": {
-        "active": false,
-        "warnLimit": 150,
-        "minLimit": "232333"
-    },
     "IDCM.ETH": {
         "active": false,
         "warnLimit": 120,
