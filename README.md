@@ -68,12 +68,14 @@ sudo /home/vnpy/anaconda2/bin/conda install -c quantopian ta-lib=0.4.9
 1. 井通注册账号**
 
 2. 找到vn.py应用示例目录examples，打开examples\CryptoTrader\GatewayConfig\JCC_connect.json，修改账号、密钥）
-#{
+```
+{
 	"account": "jn5Cz1E468HLBF1ESc6PmqG2UxdBoDBHpn",  # 账号
 	"secretKey": "sp5o1RYX54utAfzRqsxEA1S4gvHFU",     # 私钥
 	"sessionCount": 3,
 	"symbols": ["SWT-CNY","VCC-CNY"]                  # 交易对,会在屏幕下单区域显示
 } 
+```
 3. 启动程序为examples\CryptoTrader\run.py，可在pyCharm中运行
 
 4.启动后点击**_**_系统_**_--》**_连接JCC_**,即可连接JCC服务器
