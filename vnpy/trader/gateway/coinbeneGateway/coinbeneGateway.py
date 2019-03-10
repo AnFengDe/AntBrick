@@ -254,23 +254,27 @@ class CoinbeneRestApi(RestClient):
         """Coinbene的签名方案"""
         if request.data:
             request.data = json.dumps(request.data)
-            inputdata = request.data
-            signature = self.generateSignature(inputdata, self.secretKey)
-            request.headers = {
-                'X-Coinbene-APIKEY': self.apiKey,
-                'X-Coinbene-SIGNATURE': signature,
-                'X-Coinbene-INPUT': inputdata,
-                'Content-Type': 'application/json'
-            }
+            #inputdata = request.data
+            #signature = self.generateSignature(inputdata, self.secretKey)
+            request.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko",\
+                "Content-Type":"application/json;charset=utf-8","Connection":"keep-alive"}
         else:
             # 添加表头
             request.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko",\
                 "Content-Type":"application/json;charset=utf-8","Connection":"keep-alive"}
         return request
 
-    def generateSignature(self, msg, apiSecret):
+    def generateSignature(self, **kwargs):
         """签名"""
-        return base64.b64encode(hmac.new(bytes(apiSecret,'utf-8'), msg.encode(encoding='UTF8'), hashlib.sha384).digest())
+        sign_list = []
+        for key, value in kwargs.items():
+            sign_list.append("{}={}".format(key, value))
+        sign_list.sort()
+        sign_str = "&".join(sign_list)
+        mysecret = sign_str.upper().encode()
+        m = hashlib.md5()
+        m.update(mysecret)
+        return m.hexdigest()
 
     # ----------------------------------------------------------------------
     def connect(self, apiKey, secretKey, symbols, sessionCount=1):
@@ -285,9 +289,9 @@ class CoinbeneRestApi(RestClient):
         #self.queryTicker()
         #self.reqThread = Thread(target=self.queryAccount)
         #self.reqThread.start()
-        #self.queryAccount()
         self.initSubscribe()
         self.subscribe()
+        self.queryAccount()
 
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
@@ -354,8 +358,21 @@ class CoinbeneRestApi(RestClient):
     def queryAccount(self):
         """"""
         #while self._active:
-        self.addRequest('POST', '/api/v1/getuserinfo', data="1",
-                        callback=self.onQueryAccount)
+        timestamp = int(time.time())
+        dic = {
+            'account': 'exchange',
+            'apiid': self.apiKey,
+            'secret':self.secretKey,
+            'timestamp':timestamp
+        }
+        try:
+            mysign = self.generateSignature(**dic)
+            del dic['secret']
+            dic['sign'] = mysign
+            self.addRequest('POST', '/v1/trade/balance', data=dic,
+                            callback=self.onQueryAccount)
+        except Exception as e:
+            print(e)
             #time.sleep(5)  # 每隔5秒刷新账户信息
 
     def queryOrder(self):
@@ -404,21 +421,21 @@ class CoinbeneRestApi(RestClient):
 
     def onQueryAccount(self, data, request):
         """"""
-        if data['result'] == 1:
-            for d in data['data']:
-                currency = d['code']
+        if data['status'] == 'ok':
+            for d in data['balance']:
+                currency = d['asset']
                 account = self.accountDict.get(currency, None)
 
                 if not account:
                     account = VtAccountData()
                     account.gatewayName = self.gatewayName
-                    account.accountID = d['code']
+                    account.accountID = currency
                     account.vtAccountID = '.'.join([account.gatewayName, account.accountID])
 
                     self.accountDict[currency] = account
 
-                account.available = float(d['free'])
-                account.margin = float(d['freezed'])
+                account.available = float(d['available'])
+                account.margin = float(d['reserved'])
 
                 account.balance = account.margin + account.available
 
