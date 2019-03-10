@@ -704,7 +704,7 @@ class DepthMonitor(QtWidgets.QTableWidget):
         #self.contractSize = 1   # 合约乘数
         self.cellDict = {}
 
-        self.depth = 20
+        self.depth = 5
         self.verticalHeader().setDefaultSectionSize(16)
         self.initUi()
         self.setShowGrid(False)  # 不显示格子线
@@ -714,7 +714,7 @@ class DepthMonitor(QtWidgets.QTableWidget):
         #self.setRowHeight(3,10)
         self.horizontalHeader().setFixedHeight(15)  # 设定顶部标题高度
         #self.verticalHeader().setDefaultSectionSize(16)
-        self.verticalHeader().setStyleSheet("color:blue;background-color:yellow")
+        #self.verticalHeader().setStyleSheet("color:blue;background-color:yellow")
         #self.verticalHeader().setFixedHeight(200)
 
         #self.horizontalHeader.setStyleSheet("color:black;background-color:yellow")
@@ -1077,8 +1077,8 @@ class TradingWidget(QtWidgets.QFrame):
     def initUi(self):
         """初始化界面"""
         self.setWindowTitle(vtText.TRADING)
-        self.setFixedHeight(600)
-        self.setFixedWidth(700)
+        self.setFixedHeight(300)
+        self.setFixedWidth(500)
         self.setFrameShape(self.Box)    # 设置边框
         self.setLineWidth(1)           
 
@@ -1124,7 +1124,7 @@ class TradingWidget(QtWidgets.QFrame):
         
         # 右边部分，20档行情和成交回报
         self.depthMonitor = DepthMonitor(self.mainEngine, self.eventEngine)
-        self.dealsMonitor = DealsMonitor(self.mainEngine, self.eventEngine)
+        #self.dealsMonitor = DealsMonitor(self.mainEngine, self.eventEngine)
 
         # 发单按钮
         buttonBuy = QtWidgets.QPushButton('买入')
@@ -1157,7 +1157,7 @@ class TradingWidget(QtWidgets.QFrame):
         hbox = QtWidgets.QHBoxLayout()
         hbox.addLayout(vbox)  # 下单部分居中
         hbox.addWidget(self.depthMonitor)
-        hbox.addWidget(self.dealsMonitor)
+        #hbox.addWidget(self.dealsMonitor)
 
         self.setLayout(hbox)
 
