@@ -446,15 +446,12 @@ class CoinbeneRestApi(RestClient):
             #self.queryHistoryOrder()
             #self.gateway.writeLog('资金信息查询成功')
         else:
-            try:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
-            except Exception as e:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+            msg = '错误信息：%s' % (data['description'])
             self.gateway.writeLog(msg)
             return
 
     def onQueryOrder(self, data, request):
-        if data['result'] == 1:
+        if data['result'] == 'ok':
             try:
                 for d in data['data']:
                     orderID = d['orderid']
@@ -494,20 +491,14 @@ class CoinbeneRestApi(RestClient):
                 print('Exception')
                 print(e)
         else:
-            try:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
-            except Exception as e:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+            msg = '错误信息：%s' % (data['description'])
             self.gateway.writeLog(msg)
 
     def onQueryHistoryOrder(self, data, request):
         if data['result'] == 1:
             self.gateway.processQueueOrder(data, historyFlag=1)
         else:
-            try:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
-            except Exception as e:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+            msg = '错误信息：%s' % (data['description'])
             self.gateway.writeLog(msg)
 
     # ----------------------------------------------------------------------
@@ -533,11 +524,8 @@ class CoinbeneRestApi(RestClient):
         localID = request.extra
         order = self.orderBufDict[localID]
 
-        if data['result'] != 1:
-            try:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
-            except Exception as e:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+        if data['result'] != 'ok':
+            msg = '错误信息：%s' % (data['description'])
             self.gateway.writeLog(msg)
 
             order.status = STATUS_REJECTED
@@ -558,11 +546,8 @@ class CoinbeneRestApi(RestClient):
 
     # ----------------------------------------------------------------------
     def onCancelOrder(self, data, request):
-        if data['result'] != 1:
-            try:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
-            except Exception as e:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+        if data['result'] != 'ok':
+            msg = '错误信息：%s' % (data['description'])
             self.gateway.writeLog(msg)
         else:
             order = request.extra
@@ -570,11 +555,8 @@ class CoinbeneRestApi(RestClient):
             self.gateway.onOrder(order)
 
     def onCancelAllOrders(self, data, request):
-        if data['result'] != 1:
-            try:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
-            except Exception as e:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+        if data['result'] != 'ok':
+            msg = '错误信息：%s' % (data['description'])
             self.gateway.writeLog(msg)
         else:
             return
@@ -621,10 +603,7 @@ class CoinbeneRestApi(RestClient):
     # ----------------------------------------------------------------------
     def onTick(self, data, request):
         if data['status'] != 'ok':
-            try:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['description'])
-            except Exception as e:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+            msg = '错误信息：%s' % (data['description'])
             self.gateway.writeLog(msg)
         else:
             data = data['ticker'][0]
@@ -664,10 +643,7 @@ class CoinbeneRestApi(RestClient):
     # ----------------------------------------------------------------------
     def onDepth(self, data, request):
         if data['status'] != 'ok':
-            try:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
-            except Exception as e:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
+            msg = '错误信息：%s' % (data['description'])
             self.gateway.writeLog(msg)
         else:
             try:
