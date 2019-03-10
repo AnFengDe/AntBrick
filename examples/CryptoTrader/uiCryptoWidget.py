@@ -1286,7 +1286,7 @@ class TradingWidget(QtWidgets.QFrame):
     def cancelAll(self):
         """一键撤销所有委托"""
         gateway = self.mainEngine.getGateway(self.curGateway)
-        if  hasattr(gateway, 'cancelAllOrders'):
+        if hasattr(gateway, 'cancelAllOrders'):
             gateway.cancelAllOrders()
             return
         l = self.mainEngine.getAllWorkingOrders()
