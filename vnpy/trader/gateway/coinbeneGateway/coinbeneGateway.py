@@ -78,9 +78,10 @@ class CoinbeneGateway(VtGateway):
         f.close()
 
         try:
-            apiKey = str(setting['apiKey'])
-            secretKey = str(setting['secretKey'])
+            apiID = str(setting['apiID'])
+            secret = str(setting['secret'])
             symbols = setting['symbols']
+            ip = setting['ip']
         except KeyError:
             log = VtLogData()
             log.gatewayName = self.gatewayName
@@ -89,10 +90,16 @@ class CoinbeneGateway(VtGateway):
             return
 
         # 创建行情和交易接口对象
-        self.restApi.connect(apiKey, secretKey, symbols)
+        self.restApi.connect(apiID, secret, symbols, ip)
+        self.withdraw('MOAC',1) # test only
 
         # 初始化并启动查询
         #self.initQuery()
+
+    # 提币
+    def withdraw(self, symbol, amount):
+        """订阅行情"""
+        self.restApi.withdraw(symbol, amount)
 
     def subscribe(self, subscribeReq):
         """订阅行情"""
@@ -211,8 +218,9 @@ class CoinbeneRestApi(RestClient):
         self.gateway = gateway  # type: CoinbeneGateway # gateway对象
         self.gatewayName = gateway.gatewayName  # gateway对象名称
 
-        self.apiKey = ''
-        self.secretKey = ''
+        self.apiID = ''
+        self.secret = ''
+        self.ip = ''
         self.symbols = {}
 
         self.orderID = 1000000
@@ -256,11 +264,12 @@ class CoinbeneRestApi(RestClient):
         return m.hexdigest()
 
     # ----------------------------------------------------------------------
-    def connect(self, apiKey, secretKey, symbols, sessionCount=1):
+    def connect(self, apiID, secret, symbols, ip, sessionCount=1):
         """连接服务器"""
         self.symbols = symbols
-        self.apiKey = apiKey
-        self.secretKey = secretKey
+        self.apiID = apiID
+        self.secret = secret
+        self.ip = ip
         self.loginTime = int(datetime.now().strftime('%y%m%d%H%M%S')) * self.orderID
 
         self.init(REST_HOST)
@@ -283,12 +292,12 @@ class CoinbeneRestApi(RestClient):
             direction_ = directionMap[orderReq.direction]
             timestamp = int(time.time())
             dic = {
-                'apiid': self.apiKey,
+                'apiid': self.apiID,
                 'price': orderReq.price,
                 'quantity': orderReq.volume,  # 交易数量
                 'symbol': orderReq.symbol,  # 交易对
                 'type': direction_,  # buy-limit, sell-limit	限价买入 / 限价卖出
-                'secret': self.secretKey,
+                'secret': self.secret,
                 'timestamp': timestamp
             }
 
@@ -326,9 +335,9 @@ class CoinbeneRestApi(RestClient):
         timestamp = int(time.time())
         try:
             dic = {
-                'apiid': self.apiKey,
+                'apiid': self.apiID,
                 'orderid': cancelReq.orderID,
-                'secret': self.secretKey,
+                'secret': self.secret,
                 'timestamp': timestamp
             }
 
@@ -339,11 +348,6 @@ class CoinbeneRestApi(RestClient):
         except Exception as e:
             print(e)
 
-    # 取消全部订单
-    #def cancelAllOrders(self):
-    #    data = 1
-    #    self.addRequest('POST', '/api/v1/CancelAllOrders', callback=self.onCancelAllOrders, data=data)
-
     # ----------------------------------------------------------------------
     def queryAccount(self):
         """"""
@@ -351,8 +355,8 @@ class CoinbeneRestApi(RestClient):
         timestamp = int(time.time())
         dic = {
             'account': 'exchange',
-            'apiid': self.apiKey,
-            'secret':self.secretKey,
+            'apiid': self.apiID,
+            'secret':self.secret,
             'timestamp':timestamp
         }
         try:
@@ -364,6 +368,26 @@ class CoinbeneRestApi(RestClient):
         except Exception as e:
             print(e)
             #time.sleep(5)  # 每隔5秒刷新账户信息
+
+    # 提币
+    def withdraw(self, symbol, amount):
+        timestamp = int(time.time())
+        dic = {
+            'apiid': self.apiID,
+            'secret':self.secret,
+            'timestamp':timestamp,
+            'amount': amount,
+            'asset': symbol,
+            'address': self.ip
+        }
+        try:
+            mysign = self.generateSignature(**dic)
+            del dic['secret']
+            dic['sign'] = mysign
+            self.addRequest('POST', '/v1/withdraw/apply', data=dic,
+                            callback=self.onWithdraw)
+        except Exception as e:
+            print(e)
 
     def queryOrder(self):
         """"""
@@ -381,8 +405,8 @@ class CoinbeneRestApi(RestClient):
         for symbol in self.symbols:
             timestamp = int(time.time())
             dic = {
-                'apiid': self.apiKey,
-                'secret':self.secretKey,
+                'apiid': self.apiID,
+                'secret':self.secret,
                 'timestamp':timestamp,
                 'symbol': symbol,
             }
@@ -425,7 +449,15 @@ class CoinbeneRestApi(RestClient):
         else:
             msg = '错误信息：%s' % (data['description'])
             self.gateway.writeLog(msg)
-            return
+
+    def onWithdraw(self, data, request):
+        """"""
+        if data['status'] == 'ok':
+            #return data['withdrawId']
+            self.gateway.writeLog('提币成功 %s' % (data['withdrawId']))
+        else:
+            msg = '错误信息：%s' % (data['description'])
+            self.gateway.writeLog(msg)
 
     def onQueryOrder(self, data, request):
         if data['result'] == 'ok':
@@ -530,13 +562,6 @@ class CoinbeneRestApi(RestClient):
             order = request.extra
             order.status = STATUS_CANCELLED # 订单状态
             self.gateway.onOrder(order)
-
-    def onCancelAllOrders(self, data, request):
-        if data['result'] != 'ok':
-            msg = '错误信息：%s' % (data['description'])
-            self.gateway.writeLog(msg)
-        else:
-            return
 
     def initSubscribe(self):
         # 初始化
@@ -698,4 +723,3 @@ class CoinbeneRestApi(RestClient):
         self.gateway.onError(e)
 
         sys.stderr.write(self.exceptionDetail(exceptionType, exceptionValue, tb, request))
-
