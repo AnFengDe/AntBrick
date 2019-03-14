@@ -16,3 +16,4 @@ ta-lib
 futu-api
 zmq
 cbpro
+jingtum_python_lib

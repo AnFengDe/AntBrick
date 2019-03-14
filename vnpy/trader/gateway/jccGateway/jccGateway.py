@@ -18,6 +18,7 @@ from copy import copy
 from vnpy.api.rest import RestClient, Request
 from vnpy.trader.vtGateway import *
 from vnpy.trader.vtFunction import getJsonPath
+from jingtum_python_lib.transaction import Transaction
 
 #from threading import Thread
 
@@ -39,8 +40,8 @@ orderStatusMap[STATUS_ORDERED] = 3
 
 # 方向和订单类型映射
 directionMap = {}
-directionMap[(DIRECTION_BUY)] = 0
-directionMap[(DIRECTION_SELL)] = 1
+directionMap[(DIRECTION_BUY)] = 'Buy'
+directionMap[(DIRECTION_SELL)] = 'Sell'
 
 orderTypeMap = {}
 orderTypeMap[(PRICETYPE_MARKETPRICE)] = 0
@@ -124,6 +125,7 @@ class JccGateway(VtGateway):
 
         try:
             account = str(setting['account'])
+            issuerDict = str(setting['issuerDict'])
             secretKey = str(setting['secretKey'])
             symbols = setting['symbols']
         except KeyError:
@@ -134,7 +136,7 @@ class JccGateway(VtGateway):
             return
 
         # 创建行情和交易接口对象
-        self.exchangeApi.connect(account, secretKey, symbols, exchangeHost = self.exchangeHost)
+        self.exchangeApi.connect(account, issuerDict, secretKey, symbols, exchangeHost = self.exchangeHost)
         self.infoApi.connect(symbols, self.infoHost)
 
         # 初始化并启动查询
@@ -264,6 +266,7 @@ class JccExchangeApi(RestClient):
 
         self.account = ''
         self.secretKey = ''
+        self.issuerDict = {}
 
         self.orderID = 1000000
         self.loginTime = 0
@@ -302,11 +305,14 @@ class JccExchangeApi(RestClient):
         return base64.b64encode(hmac.new(bytes(apiSecret,'utf-8'), msg.encode(encoding='UTF8'), hashlib.sha384).digest())
 
     # ----------------------------------------------------------------------
-    def connect(self, account, secretKey, symbols, exchangeHost, sessionCount=1):
+    def connect(self, account, issuerDict, secretKey, symbols, exchangeHost, sessionCount=1):
         """连接服务器"""
         self.account = account
         self.secretKey = secretKey
+        transaction = Transaction(None,None)
+        transaction.set_secret(self.secretKey)
         self.symbols = symbols
+        self.issuerDict = issuerDict
         self.loginTime = int(datetime.now().strftime('%y%m%d%H%M%S')) * self.orderID
 
         self.init(exchangeHost)
@@ -320,21 +326,41 @@ class JccExchangeApi(RestClient):
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
         try:
+            http = urllib3.PoolManager()
+            r = http.request('GET', self.exchangeHost + '/exchange/sequence/' + self.account)
+            data = r.data.decode()
+            result = json.loads(data.replace("\n", ""))
+            if(result.code != '0'):
+                print(result.msg)
+                return
+            sequence = result.data.sequence
             self.gateway.localID += 1
             localID = str(self.gateway.localID)
             vtOrderID = '.'.join([self.gatewayName, localID])
 
             direction_ = directionMap[orderReq.direction]
-            type_ = orderTypeMap[orderReq.orderType]
-            data = {
-                'Symbol': orderReq.symbol,  # 交易对
-                'size': orderReq.volume,  # 交易数量
-                'price': orderReq.price,
-                'Side': direction_,  # 交易方向(0 买入 1 卖出)
-                'type': type_,  # 订单类型 (0 市场价 1 限价)
-                "Amount": float(orderReq.volume * orderReq.price)  # 订单总金额 - 市价必填
+            options = {
+                'Flags': 0,
+                'Sequence': sequence,
+                'Account': self.account,
+                'Fee': 0.00001,
+                'TransactionType': "OfferCreate",
+                'TakerGets': {
+                    'value': orderReq.valueGet,
+                    'currency': orderReq.currencyGet,
+                    'issuer': self.issuerDict[orderReq.currencyGet]
+                },
+                'TakerPays': {
+                    'value': orderReq.valuePay,
+                    'currency': orderReq.currencyPay,
+                    'issuer': self.issuerDict[orderReq.currencyPay]
+                }
             }
-
+            self.transaction.parseJson(options)
+            sign = self.transaction.signing()
+            data = {
+                'sign': sign
+            }
             # 缓存委托
             order = VtOrderData()
             order.gatewayName = self.gatewayName
@@ -345,8 +371,10 @@ class JccExchangeApi(RestClient):
             order.vtOrderID = vtOrderID
             order.direction = orderReq.direction
             order.ordertType = orderReq.orderType
-            order.price = orderReq.price
-            order.volume = orderReq.volume
+            order.valueGet = orderReq.valueGet
+            order.currencyGet = orderReq.currencyGet
+            order.valuePay = orderReq.valuePay
+            order.currencyPay = orderReq.currencyPay
             #order.localID = localID
             # order.totalVolume = orderReq.volume * orderReq.price
             order.status = STATUS_UNKNOWN
@@ -354,7 +382,7 @@ class JccExchangeApi(RestClient):
 
             self.orderBufDict[localID] = order
 
-            self.addRequest('POST', '/api/v1/trade',
+            self.addRequest('POST', '/exchange/sign_order',
                             callback=self.onSendOrder,
                             data=data,
                             extra=localID)
@@ -364,19 +392,33 @@ class JccExchangeApi(RestClient):
     # ----------------------------------------------------------------------
     def cancelOrder(self, cancelReq):
         try:
+            options = {
+                'Flags': 0,
+                'Account': self.account,
+                'Fee': 0.00001,
+                'OfferSequence': cancelReq.Sequence,
+                'TransactionType': "OfferCancel"
+            }
+            self.transaction.parseJson(options)
+            sign = self.transaction.signing()
             data = {
-                'Symbol': cancelReq.symbol,  # 交易对
-                'OrderID': cancelReq.orderID,  # 订单Id
-                'Side': directionMap[cancelReq.direction]  # 交易方向(0 买入 1 卖出)
+                'sign': sign
             }
         except Exception as e:
             print(e)
-        self.addRequest('POST', '/api/v1/cancel_order', callback=self.onCancelOrder, data=data, extra=cancelReq)
+        self.addRequest('DELETE', '/exchange/sign_cancel_order', callback=self.onCancelOrder, data=data, extra=cancelReq)
 
     # 取消全部订单
     def cancelAllOrders(self):
-        data = 1
-        self.addRequest('POST', '/api/v1/CancelAllOrders', callback=self.onCancelAllOrders, data=data)
+        http = urllib3.PoolManager()
+        r = http.request('GET', self.exchangeHost + '/exchange/orders/' + self.account + '/1')
+        data = r.data.decode()
+        result = json.loads(data.replace("\n", ""))
+        if(result.code != '0'):
+            print(result.msg)
+            return
+        for item in result.data:
+            self.cancelOrder(item.sequence)
 
     # 获取JCC最新币币行情数据
     def queryTicker(self):
