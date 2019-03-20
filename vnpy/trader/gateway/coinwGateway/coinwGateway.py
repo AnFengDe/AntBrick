@@ -1,7 +1,7 @@
 # encoding: UTF-8
 
 '''
-Coinbene交易接口
+Coinw交易接口
 '''
 from __future__ import print_function
 
@@ -11,7 +11,7 @@ import hmac
 import sys
 import base64
 import zlib
-from datetime import datetime
+from datetime import timedelta, datetime
 from copy import copy
 
 from vnpy.api.rest import RestClient, Request
@@ -20,8 +20,8 @@ from vnpy.trader.vtFunction import getJsonPath
 
 #from threading import Thread
 
-REST_HOST = 'http://api.coinbene.com'
-EXCHANGE_COINBENE = "COINBENE"
+REST_HOST = 'https://api.coinw.ai'
+EXCHANGE_Coinw = "Coinw"
 
 # 委托状态类型映射
 orderStatusMap = {}
@@ -40,8 +40,8 @@ directionMap[(DIRECTION_SELL)] = 'sell-limit'
 orderStatusMapReverse = {v: k for k, v in orderStatusMap.items()}
 directionMapReverse = {v: k for k, v in directionMap.items()}
 
-class CoinbeneGateway(VtGateway):
-    """Coinbene接口"""
+class CoinwGateway(VtGateway):
+    """Coinw接口"""
 
     # ----------------------------------------------------------------------
     def __init__(self, eventEngine, gatewayName=''):
@@ -56,7 +56,7 @@ class CoinbeneGateway(VtGateway):
 
         self.qryEnabled = False         # 是否要启动循环查询
 
-        self.restApi = CoinbeneRestApi(self)
+        self.restApi = CoinwRestApi(self)
 
         self.fileName = 'GatewayConfig/' + self.gatewayName + '_connect.json'
         self.filePath = getJsonPath(self.fileName, __file__)
@@ -90,14 +90,13 @@ class CoinbeneGateway(VtGateway):
 
         # 创建行情和交易接口对象
         self.restApi.connect(apiKey, secretKey, symbols)
-        #self.queryOrder('201903170905491440010962')
 
         # 初始化并启动查询
         #self.initQuery()
 
     def subscribe(self, subscribeReq):
         """订阅行情"""
-        self.restApi.subscribe()
+        self.restApi.subscribe(subscribeReq)
 
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):
@@ -108,10 +107,6 @@ class CoinbeneGateway(VtGateway):
     def cancelOrder(self, cancelOrderReq):
         """撤单"""
         self.restApi.cancelOrder(cancelOrderReq)
-
-    def queryOrder(self, orderid):
-        #查询委托
-        self.restApi.queryOrder(orderid)
 
     # ----------------------------------------------------------------------
     def close(self):
@@ -175,7 +170,7 @@ class CoinbeneGateway(VtGateway):
             order.gatewayName = self.gatewayName
 
             order.symbol = d['symbol']
-            order.exchange = EXCHANGE_COINBENE
+            order.exchange = EXCHANGE_Coinw
             order.vtSymbol = '.'.join([order.exchange, order.symbol])
 
             order.orderID = d['orderid']
@@ -206,14 +201,14 @@ class CoinbeneGateway(VtGateway):
         self.eventEngine.put(event)
 
 
-class CoinbeneRestApi(RestClient):
+class CoinwRestApi(RestClient):
     """REST API实现"""
     # ----------------------------------------------------------------------
     def __init__(self, gateway):
         """Constructor"""
         super().__init__()
 
-        self.gateway = gateway  # type: CoinbeneGateway # gateway对象
+        self.gateway = gateway  # type: CoinwGateway # gateway对象
         self.gatewayName = gateway.gatewayName  # gateway对象名称
 
         self.apiKey = ''
@@ -237,7 +232,7 @@ class CoinbeneRestApi(RestClient):
 
     # ----------------------------------------------------------------------
     def sign(self, request):
-        """Coinbene的签名方案"""
+        """Coinw的签名方案"""
         if request.data:
             request.data = json.dumps(request.data)
             request.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko",\
@@ -274,9 +269,10 @@ class CoinbeneRestApi(RestClient):
         #self.reqThread = Thread(target=self.queryAccount)
         #self.reqThread.start()
         self.initSubscribe()
-        self.subscribe()
-        self.queryAccount()
-        self.queryOpenOrders()
+        self.getSymbol()
+        #self.subscribe()
+        #self.queryAccount()
+        #self.queryOpenOrders()
 
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
@@ -301,7 +297,7 @@ class CoinbeneRestApi(RestClient):
             order = VtOrderData()
             order.gatewayName = self.gatewayName
             order.symbol = orderReq.symbol
-            order.exchange = EXCHANGE_COINBENE
+            order.exchange = EXCHANGE_Coinw
             order.vtSymbol = '.'.join([order.exchange, order.symbol])
             #order.orderID = localID
             order.vtOrderID = vtOrderID
@@ -344,10 +340,21 @@ class CoinbeneRestApi(RestClient):
         except Exception as e:
             print(e)
 
-    # 取消全部订单
-    #def cancelAllOrders(self):
-    #    data = 1
-    #    self.addRequest('POST', '/api/v1/CancelAllOrders', callback=self.onCancelAllOrders, data=data)
+    # 查询虚拟币对应Symbol和对应交易对
+    def getSymbol(self):
+        timestamp = int(time.time())
+        dic = {
+            'api_key': self.apiKey,
+            'secret_key':self.secretKey
+        }
+        try:
+            mysign = self.generateSignature(**dic)
+            del dic['secret_key']
+            dic['sign'] = mysign
+            self.addRequest('POST', '/appApi.html?action=getSymbol', data=dic,
+                            callback=self.onGetSymbol)
+        except Exception as e:
+            print(e)
 
     # ----------------------------------------------------------------------
     def queryAccount(self):
@@ -370,21 +377,18 @@ class CoinbeneRestApi(RestClient):
             print(e)
             #time.sleep(5)  # 每隔5秒刷新账户信息
 
-    def queryOrder(self, orderid):
-        timestamp = int(time.time())
-        dic = {
-            'orderid': orderid,
-            'apiid': self.apiKey,
-            'secret':self.secretKey,
-            'timestamp':timestamp
-        }
-        mysign = self.generateSignature(**dic)
-        del dic['secret']
-        dic['sign'] = mysign
-        self.addRequest('POST', '/v1/trade/order/info', data=dic,
-                        callback=self.onQueryOrder)
+    def queryOrder(self):
+        """"""
+        for symbol in self.symbols:
+            req = {
+                'Symbol': symbol,
+                "OrderID": 100
+            }
+            path = '/api/v1/getorderinfo'
+            self.addRequest('POST', path, data=req,
+                            callback=self.onQueryOrder)
 
-    # 获取Coinbene当前委托
+    # 获取Coinw当前委托
     def queryOpenOrders(self):
         for symbol in self.symbols:
             timestamp = int(time.time())
@@ -403,6 +407,20 @@ class CoinbeneRestApi(RestClient):
             except Exception as e:
                 print(e)
         self.gateway.writeLog('当前订单查询成功')
+
+    # 查询虚拟币对应Symbol和对应交易对
+    def onGetSymbol(self, data, request):
+        """"""
+        if data['code'] == 200:
+            self.symbolsList = {}
+            self.allSymbols = data['data']['交易对symbol']
+            print(self.allSymbols)
+
+            #msg = data['data']['msg']
+            self.gateway.writeLog(data['msg'])
+        else:
+            msg = '错误信息：%s' % (data['msg'])
+            self.gateway.writeLog(msg)
 
     def onQueryAccount(self, data, request):
         """"""
@@ -436,40 +454,41 @@ class CoinbeneRestApi(RestClient):
             return
 
     def onQueryOrder(self, data, request):
-        if data['status'] == 'ok':
+        if data['result'] == 'ok':
             try:
-                d = data['order']
-                orderID = d['orderid']
-                strOrderID = str(orderID)
+                for d in data['data']:
+                    orderID = d['orderid']
+                    strOrderID = str(orderID)
 
-                self.gateway.localID += 1
-                localID = str(self.gateway.localID)
+                    self.gateway.localID += 1
+                    localID = str(self.gateway.localID)
 
-                #self.orderLocalDict[strOrderID] = localID
-                self.localOrderDict[localID] = strOrderID
+                    #self.orderLocalDict[strOrderID] = localID
+                    self.localOrderDict[localID] = strOrderID
 
-                order = VtOrderData()
-                order.gatewayName = self.gatewayName
+                    order = VtOrderData()
+                    order.gatewayName = self.gatewayName
 
-                order.orderID = localID
-                order.vtOrderID = '.'.join([order.gatewayName, order.orderID])
+                    order.orderID = localID
+                    order.vtOrderID = '.'.join([order.gatewayName, order.orderID])
 
-                order.symbol = d['symbol']
-                order.exchange = EXCHANGE_COINBENE
-                order.vtSymbol = '.'.join([order.exchange, order.symbol])
+                    order.symbol = d['symbol']
+                    order.exchange = EXCHANGE_Coinw
+                    order.vtSymbol = '.'.join([order.exchange, order.symbol])
 
-                order.price = float(d['price'])  # 委托价格
-                # order.avgprice = float(d['avgprice'])  # 平均成交价
-                order.volume = float(d['orderquantity'])  # 委托数量
-                order.tradedVolume = float(d['filledquantity'])  # 成交数量
-                order.status = orderStatusMapReverse[d['orderstatus']]  # 订单状态
-                order.direction = directionMapReverse[d['type']]  # 交易方向   0 买入 1 卖出
+                    order.price = float(d['price'])  # 委托价格
+                    order.avgprice = float(d['avgprice'])  # 平均成交价
+                    order.totalVolume = float(d['amount'])  # 委托数量
+                    order.tradedVolume = float(d['executedamount'])  # 成交数量
+                    order.status = orderStatusMapReverse[str(d['status'])]  # 订单状态
+                    order.direction = directionMapReverse[d['side']]   # 交易方向   0 买入 1 卖出
+                    order.orderType = orderTypeMapReverse[d['type']]  # 订单类型  0	市场价  1	 限价
 
-                dt = datetime.fromtimestamp(d['createtime']/1000)
-                order.orderTime = dt.strftime('%H:%M:%S')
+                    dt = datetime.fromtimestamp(d['timestamp'])
+                    order.orderTime = dt.strftime('%H:%M:%S')
 
-                self.orderDict[strOrderID] = order
-                self.gateway.onOrder(order)
+                    self.orderDict[strOrderID] = order
+                    self.gateway.onOrder(order)
 
             except Exception as e:
                 print('Exception')
@@ -517,7 +536,7 @@ class CoinbeneRestApi(RestClient):
         else:
             order.status = STATUS_ORDERED  # 已报
             strOrderID = data['orderid']
-            print(data['orderid'])
+
             self.localOrderDict[localID] = strOrderID
             order.orderID = strOrderID  # 服务器返回orderid写入order
             order.vtOrderID = '.'.join([self.gatewayName, order.orderID])  # 本地队列索引
@@ -553,7 +572,7 @@ class CoinbeneRestApi(RestClient):
             tick = VtTickData()
             tick.gatewayName = self.gatewayName
             tick.symbol = symbol
-            tick.exchange = EXCHANGE_COINBENE
+            tick.exchange = EXCHANGE_Coinw
             tick.vtSymbol = '.'.join([tick.exchange, tick.symbol])
             self.tickDict[symbol] = tick
             self.dealDict[symbol] = tick
