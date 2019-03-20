@@ -103,7 +103,7 @@ class CoinbeneGateway(VtGateway):
 
     def subscribe(self, subscribeReq):
         """订阅行情"""
-        self.restApi.subscribe(subscribeReq)
+        self.restApi.subscribe()
 
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):

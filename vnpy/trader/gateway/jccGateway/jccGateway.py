@@ -140,11 +140,11 @@ class JccGateway(VtGateway):
         self.infoApi.connect(symbols, self.infoHost)
 
         # 初始化并启动查询
-        #self.initQuery()
+        self.initQuery()
 
     def subscribe(self, subscribeReq):
         """订阅行情"""
-        self.wsApi.subscribe(subscribeReq)
+        self.infoApi.subscribe()
 
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):
