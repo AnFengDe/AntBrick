@@ -81,6 +81,7 @@ class CoinwGateway(VtGateway):
             apiKey = str(setting['apiKey'])
             secretKey = str(setting['secretKey'])
             symbols = setting['symbols']
+            coins = setting['coins']
         except KeyError:
             log = VtLogData()
             log.gatewayName = self.gatewayName
@@ -89,7 +90,7 @@ class CoinwGateway(VtGateway):
             return
 
         # 创建行情和交易接口对象
-        self.restApi.connect(apiKey, secretKey, symbols)
+        self.restApi.connect(apiKey, secretKey, symbols, coins)
 
         # 初始化并启动查询
         #self.initQuery()
@@ -250,15 +251,17 @@ class CoinwRestApi(RestClient):
             sign_list.append("{}={}".format(key, value))
         sign_list.sort()
         sign_str = "&".join(sign_list)
-        mysecret = sign_str.upper().encode()
+        #mysecret = sign_str.upper().encode()
+        mysecret = sign_str.encode()
         m = hashlib.md5()
         m.update(mysecret)
-        return m.hexdigest()
+        return m.hexdigest().upper()
 
     # ----------------------------------------------------------------------
-    def connect(self, apiKey, secretKey, symbols, sessionCount=1):
+    def connect(self, apiKey, secretKey, symbols, coins, sessionCount=1):
         """连接服务器"""
         self.symbols = symbols
+        self.coins = coins
         self.apiKey = apiKey
         self.secretKey = secretKey
         self.loginTime = int(datetime.now().strftime('%y%m%d%H%M%S')) * self.orderID
@@ -270,8 +273,9 @@ class CoinwRestApi(RestClient):
         #self.reqThread.start()
         self.initSubscribe()
         self.getSymbol()
-        #self.subscribe()
-        #self.queryAccount()
+        time.sleep(2)  # 等待getSymbol完成
+        self.subscribe()
+        self.queryAccount()
         #self.queryOpenOrders()
 
     # ----------------------------------------------------------------------
@@ -351,27 +355,23 @@ class CoinwRestApi(RestClient):
             mysign = self.generateSignature(**dic)
             del dic['secret_key']
             dic['sign'] = mysign
-            self.addRequest('POST', '/appApi.html?action=getSymbol', data=dic,
+            self.addRequest('POST', '/appApi.html?action=getSymbol',
                             callback=self.onGetSymbol)
         except Exception as e:
             print(e)
 
     # ----------------------------------------------------------------------
     def queryAccount(self):
-        """"""
-        #while self._active:
         timestamp = int(time.time())
         dic = {
-            'account': 'exchange',
-            'apiid': self.apiKey,
-            'secret':self.secretKey,
-            'timestamp':timestamp
+            'api_key': self.apiKey,
+            'secret_key': self.secretKey
         }
         try:
             mysign = self.generateSignature(**dic)
-            del dic['secret']
+            del dic['secret_key']
             dic['sign'] = mysign
-            self.addRequest('POST', '/v1/trade/balance', data=dic,
+            self.addRequest('POST', '/appApi.html?action=userinfo', params=dic,
                             callback=self.onQueryAccount)
         except Exception as e:
             print(e)
@@ -412,21 +412,24 @@ class CoinwRestApi(RestClient):
     def onGetSymbol(self, data, request):
         """"""
         if data['code'] == 200:
-            self.symbolsList = {}
-            self.allSymbols = data['data']['交易对symbol']
-            print(self.allSymbols)
-
-            #msg = data['data']['msg']
+            self.symbolsList = {}  # '1":'swtc/usdt"
+            self.symbolsKeys = {}  # 'swtc/usdt":'1"
+            temp = data['data']['交易对symbol'].split('  ')
+            for item in temp:
+                if ':' in item:
+                    self.symbolsList[item.split(':')[0]] = item.split(':')[1]
+                    self.symbolsKeys[item.split(':')[1]] = item.split(':')[0]
+            print(self.symbolsList)
             self.gateway.writeLog(data['msg'])
         else:
-            msg = '错误信息：%s' % (data['msg'])
+            msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             self.gateway.writeLog(msg)
 
     def onQueryAccount(self, data, request):
         """"""
-        if data['status'] == 'ok':
-            for d in data['balance']:
-                currency = d['asset']
+        if data['code'] == 200:
+            d = data['data']
+            for currency in self.coins:
                 account = self.accountDict.get(currency, None)
 
                 if not account:
@@ -437,8 +440,8 @@ class CoinwRestApi(RestClient):
 
                     self.accountDict[currency] = account
 
-                account.available = float(d['available'])
-                account.margin = float(d['reserved'])
+                account.available = float(d['free'][currency])
+                account.margin = float(d['frozen'][currency])
 
                 account.balance = account.margin + account.available
 
@@ -449,7 +452,7 @@ class CoinwRestApi(RestClient):
             #self.queryHistoryOrder()
             #self.gateway.writeLog('资金信息查询成功')
         else:
-            msg = '错误信息：%s' % (data['description'])
+            msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             self.gateway.writeLog(msg)
             return
 
@@ -578,46 +581,34 @@ class CoinwRestApi(RestClient):
             self.dealDict[symbol] = tick
 
     def subscribe(self):
-        depth = 5
+        #depth = 5
         #dealSize = 20
         for symbol in self.symbols:
-            # 获取市场深度
-            path = "/v1/market/orderbook?symbol=" + symbol + "&depth=" + str(depth)
-            self.addRequest('GET', path,
+            # 获取实时深度行情
+            path = "/appApi.html?action=depth&symbol=" + self.symbolsKeys[symbol]
+            self.addRequest('POST ', path, extra=symbol,
                             callback=self.onDepth,
                             onFailed=self.onFailed,
                             onError=self.onError)
 
-            path = "/v1/market/ticker?symbol=" + symbol
-            self.addRequest('GET', path,
-                            callback=self.onTick,
-                            onFailed=self.onFailed,
-                            onError=self.onError)
-
-            """
-            path = "/v1/market/trades?symbol=" + symbol + "&size=" + str(dealSize)
-            self.addRequest('GET', path,
-                            callback=self.onDeal,
-                            onFailed=self.onFailed,
-                            onError=self.onError)
-            """
-
     # ----------------------------------------------------------------------
     def onTick(self, data, request):
-        if data['status'] != 'ok':
-            msg = '错误信息：%s' % (data['description'])
-            self.gateway.writeLog(msg)
-        else:
-            data = data['ticker'][0]
-
-            symbol = data['symbol']
+        if data['code'] == 200:
+            tick = VtTickData()
+            symbol = request.extra
             tick = self.tickDict[symbol]
             tick.lastPrice = float(data['last'])
-            tick.highPrice = float(data['24hrHigh'])
-            tick.lowPrice = float(data['24hrLow'])
-            tick.volume = float(data['24hrVol'])
+            tick.highPrice = float(data['high'])
+            tick.lowPrice = float(data['low'])
+            tick.volume = float(data['vol'])
+            tick.buy = data['buy']
+            tick.sell = data['sell']
 
             self.gateway.onTick(tick)
+        else:
+            msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
+            self.gateway.writeLog(msg)
+
 
     def onDeals(self, data, request):
         return
@@ -644,17 +635,17 @@ class CoinwRestApi(RestClient):
 
     # ----------------------------------------------------------------------
     def onDepth(self, data, request):
-        if data['status'] != 'ok':
-            msg = '错误信息：%s' % (data['description'])
+        if data['code'] != 200:
+            msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             self.gateway.writeLog(msg)
         else:
             try:
-                symbol = data['symbol']
+                symbol = request.extra
                 #print('symbol is %s'%(symbol))
                 tick = self.tickDict[symbol]
 
-                bids = data['orderbook']['bids']
-                asks = data['orderbook']['asks']
+                bids = data['data']['bids']
+                asks = data['data']['asks']
 
                 depth = 20
                 # 买单
@@ -670,7 +661,7 @@ class CoinwRestApi(RestClient):
                         if index >= len(bids):
                             setattr(tick, para, 0)
                         else:
-                            setattr(tick, para, float(bids[index]['quantity']))  # float can sum
+                            setattr(tick, para, float(bids[index]['amount']))  # float can sum
                 except Exception as e:
                     print(e)
 
@@ -687,11 +678,11 @@ class CoinwRestApi(RestClient):
                         if index >= len(asks):
                             setattr(tick, para, 0)
                         else:
-                            setattr(tick, para, float(asks[index]['quantity']))
+                            setattr(tick, para, float(asks[index]['amount']))
                 except Exception as e:
                     print(e)
 
-                tick.datetime = datetime.fromtimestamp(data['timestamp']/1000)
+                tick.datetime = datetime.fromtimestamp(data['time']/1000)
                 tick.date = tick.datetime.strftime('%Y%m%d')
                 tick.time = tick.datetime.strftime('%H:%M:%S')
 
