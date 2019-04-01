@@ -46,6 +46,8 @@ class BrickTradeEngine(object):
         self.coinBeneGateway = self.mainEngine.getGateway(self.coinBeneGatewayName)
         self.jccGatewayName = 'JCC'
         self.jccGateway = self.mainEngine.getGateway(self.jccGatewayName)
+        self.marketInfo = {}
+        self.stage = 0
 
     #----------------------------------------------------------------------
     def loadSetting(self):
@@ -88,6 +90,7 @@ class BrickTradeEngine(object):
         while self.active:
             self.jccGateway.exchangeApi.queryAccount()
             self.jccGateway.subscribe(None)
+            self.jccGateway.exchangeApi.queryHistoryOrder()
             self.coinBeneGateway.restApi.queryAccount()
             self.coinBeneGateway.subscribe(None)
             time.sleep(1)
@@ -109,42 +112,60 @@ class BrickTradeEngine(object):
         self.seekBrickGap()
 
     def seekBrickGap(self):
-        amount = 1
         if self.marketInfo.get("JCC.JMOAC-CNY") is not None and self.marketInfo.get("COINBENE.MOACUSDT") is not None:
             gap = (self.marketInfo["JCC.JMOAC-CNY"]["bid"] * self.settingsDict["exchangeRate"]["CNY_USD"]) / \
                   self.marketInfo["COINBENE.MOACUSDT"]["ask"] - 1
             if gap > self.settingsDict["gapLimit"]:
-                usdt_amount = amount * self.marketInfo["JCC.JMOAC-CNY"]["bid"] * self.settingsDict["exchangeRate"]["CNY_USD"]
-                if self.stage == 0 and self.jccGateway.accountDict["JMOAC"].balance >= amount and self.coinBeneGateway.accountDict["USDT"].balance > usdt_amount:
-                    print("MOAC: JCC BID:%f\tCOINBENE ASK:%f\t Gap: %f" % (self.marketInfo["JCC.JMOAC-CNY"]["bid"], self.marketInfo["COINBENE.MOACUSDT"]["ask"], gap))
+                print("MOAC: JCC BID:%f\tCOINBENE ASK:%f\t Gap: %f" % (self.marketInfo["JCC.JMOAC-CNY"]["bid"], self.marketInfo["COINBENE.MOACUSDT"]["ask"], gap))
+                usdt_amount = self.settingsDict["amount"] * self.marketInfo["JCC.JMOAC-CNY"]["bid"] * \
+                              self.settingsDict["exchangeRate"]["CNY_USD"]
+                if self.stage == 0 and self.jccGateway.accountDict["JMOAC"].balance >= self.settingsDict["amount"] and \
+                        self.coinBeneGateway.accountDict["USDT"].balance > usdt_amount:
                     self.stage = 1
-                    orderReq = {
-                        "valueGet" : amount * self.marketInfo["JCC.JMOAC-CNY"]["bid"],
-                        "currencyGet" : "CNY",
-                        "valuePay" : amount,
-                        "currencyPay" : "JMOAC",
-                        "direction" : DIRECTION_BUY,
-                        "symbol" : "JCC.JMOAC-CNY"
-                    }
+                    orderReq = VtOrderReq()
+                    orderReq.valueGet = self.settingsDict["amount"] * self.marketInfo["JCC.JMOAC-CNY"]["bid"]
+                    orderReq.currencyGet = "CNY"
+                    orderReq.valuePay = self.settingsDict["amount"]
+                    orderReq.currencyPay = "JMOAC"
+                    orderReq.direction = DIRECTION_SELL
+                    orderReq.symbol = "JMOAC-CNY"
                     print(orderReq)
-                    # self.jccGateway.sendOrder(orderReq)
+                    self.jccGateway.sendOrder(orderReq)
+            elif self.stage == 0:
+                price_with_gap = (self.settingsDict["gapLimit"] + 1) * self.marketInfo["COINBENE.MOACUSDT"]["ask"] / self.settingsDict["exchangeRate"]["CNY_USD"]
+                print("MOAC: JCC BID:%f\tCOINBENE ASK:%f\t Gap: %f" % (price_with_gap, self.marketInfo["COINBENE.MOACUSDT"]["ask"], gap))
+                usdt_amount = self.settingsDict["amount"] * self.marketInfo["JCC.JMOAC-CNY"]["ask"] * \
+                              self.settingsDict["exchangeRate"]["CNY_USD"]
+                if price_with_gap < self.marketInfo["JCC.JMOAC-CNY"]["ask"] - 0.02 and self.jccGateway.accountDict["JMOAC"].balance >= self.settingsDict["amount"] and \
+                        self.coinBeneGateway.accountDict["USDT"].balance > usdt_amount:
+                    self.stage = 1
+                    orderReq = VtOrderReq()
+                    orderReq.valueGet = round(self.settingsDict["amount"] * (self.marketInfo["JCC.JMOAC-CNY"]["ask"] - 0.02), 6)
+                    orderReq.currencyGet = "CNY"
+                    orderReq.valuePay = self.settingsDict["amount"]
+                    orderReq.currencyPay = "JMOAC"
+                    orderReq.direction = DIRECTION_SELL
+                    orderReq.symbol = "JMOAC-CNY"
+                    print(orderReq)
+                    self.jccGateway.sendOrder(orderReq)
+                    pass
             gap = self.marketInfo["COINBENE.MOACUSDT"]["bid"] / (
                     self.marketInfo["JCC.JMOAC-CNY"]["ask"] * self.settingsDict["exchangeRate"]["CNY_USD"]) - 1
             if gap > self.settingsDict["gapLimit"]:
-                moac_amount = amount / self.marketInfo["JCC.JMOAC-CNY"]["ask"]
-                if self.stage == 0 and self.jccGateway.accountDict["CNY"].balance >= amount and self.coinBeneGateway.accountDict["MOAC"].balance > moac_amount:
-                    print("MOAC: COINBENE BID:%f\tJCC ASK:%f\t Gap: %f" % (self.marketInfo["COINBENE.MOACUSDT"]["bid"], self.marketInfo["JCC.JMOAC-CNY"]["ask"], gap))
+                print("MOAC: COINBENE BID:%f\tJCC ASK:%f\t Gap: %f" % (self.marketInfo["COINBENE.MOACUSDT"]["bid"], self.marketInfo["JCC.JMOAC-CNY"]["ask"], gap))
+                cny_amount = self.settingsDict["amount"] * self.marketInfo["JCC.JMOAC-CNY"]["ask"]
+                if self.stage == 0 and self.jccGateway.accountDict["CNY"].balance >= cny_amount and \
+                        self.coinBeneGateway.accountDict["MOAC"].balance > self.settingsDict["amount"]:
                     self.stage = 2
-                    orderReq = {
-                        "valueGet": amount / self.marketInfo["JCC.JMOAC-CNY"]["ask"],
-                        "currencyGet": "JMOAC",
-                        "valuePay": amount,
-                        "currencyPay": "CNY",
-                        "direction": DIRECTION_SELL,
-                        "symbol": "JCC.JMOAC-CNY"
-                    }
+                    orderReq = VtOrderReq()
+                    orderReq.valueGet = self.settingsDict["amount"]
+                    orderReq.currencyGet = "JMOAC"
+                    orderReq.valuePay = round(self.settingsDict["amount"] * self.marketInfo["JCC.JMOAC-CNY"]["ask"], 6)
+                    orderReq.currencyPay = "CNY"
+                    orderReq.direction = DIRECTION_BUY
+                    orderReq.symbol = "JMOAC-CNY"
                     print(orderReq)
-                    # self.jccGateway.sendOrder(orderReq)
+                    self.jccGateway.sendOrder(orderReq)
         pass
 
     # 停止搬砖交易
@@ -166,29 +187,28 @@ class BrickTradeEngine(object):
 
     #----------------------------------------------------------------------
     def updateOrder(self, event):
-        #更新成交数据
-        # 不处理撤单委托
-        order = event.dict_['data']
-        if order.status == STATUS_CANCELLED:
+        #更新下单数据
+        tick = event.dict_['data']
+        if tick.vtSymbol not in self.settingsDict["vtSymbols"]:
             return
-        
-        if order.symbol == "JCC.JMOAC-CNY" and self.stage == 1:
-            usdtVolume = order.tradedVolume * self.settingsDict["exchangeRate"]["CNY_USD"]
-            orderReq = {
-                'price': self.marketInfo["COINBENE.MOACUSDT"]["ask"],
-                'quantity': usdtVolume,  # 交易数量
-                'symbol': "MOACUSDT",  # 交易对
-                'direction': DIRECTION_BUY  # 限价买入
-            }
-            self.coinBeneGateway.sendOrder(orderReq)
-        elif order.symbol == "JCC.JMOAC-CNY" and self.stage == 2:
-            orderReq = {
-                'price': self.marketInfo["COINBENE.MOACUSDT"]["bid"],
-                'quantity': order.tradedVolume,  # 交易数量
-                'symbol': "MOACUSDT",  # 交易对
-                'direction': DIRECTION_SELL  # 限价卖出
-            }
-            self.coinBeneGateway.sendOrder(orderReq)
+        order = event.dict_['data']
+        if order.status == STATUS_ORDERED:
+            if order.vtSymbol == "COINBENE.MOACUSDT" and self.stage == 1:
+                # watchThread = Thread(target=self.watchCoinBeneOrder, args=(order.orderID, ))
+                # watchThread.start()
+                # self.stage = 0
+                pass
+            elif order.vtSymbol == "COINBENE.MOACUSDT" and self.stage == 2:
+                # self.stage = 0
+                pass
+            elif order.vtSymbol == "JCC.JMOAC-CNY":
+                pass
+
+    def watchCoinBeneOrder(self, orderid):
+        while True:
+            self.coinBeneGateway.queryOrder(orderid)
+            time.sleep(1)
+            pass
 
     #----------------------------------------------------------------------
     def updateTrade(self, event):
@@ -196,6 +216,26 @@ class BrickTradeEngine(object):
         tick = event.dict_['data']
         if tick.vtSymbol not in self.settingsDict["vtSymbols"]:
             return
+
+        # 不处理撤单委托
+        order = event.dict_['data']
+        if order.status == STATUS_ALLTRADED:
+            if order.vtSymbol == "JCC.JMOAC-CNY" and self.stage == 1:
+                orderReq = VtOrderReq()
+                orderReq.price = self.marketInfo["COINBENE.MOACUSDT"]["ask"]
+                orderReq.volume = self.settingsDict["amount"]  # 交易数量
+                orderReq.symbol = "MOACUSDT"  # 交易对
+                orderReq.direction = DIRECTION_BUY  # 限价买入
+                print(orderReq)
+                self.coinBeneGateway.sendOrder(orderReq)
+            elif order.vtSymbol == "JCC.JMOAC-CNY" and self.stage == 2:
+                orderReq = VtOrderReq()
+                orderReq.price = self.marketInfo["COINBENE.MOACUSDT"]["bid"]
+                orderReq.volume = self.settingsDict["amount"]  # 交易数量
+                orderReq.symbol = "MOACUSDT"  # 交易对
+                orderReq.direction = DIRECTION_SELL  # 限价卖出
+                print(orderReq)
+                self.coinBeneGateway.sendOrder(orderReq)
 
 
     #----------------------------------------------------------------------

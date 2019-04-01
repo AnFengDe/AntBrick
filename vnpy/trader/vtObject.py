@@ -225,6 +225,13 @@ class VtOrderData(VtBaseData):
         self.tradedVolume = EMPTY_INT           # 报单成交数量
         self.status = EMPTY_UNICODE             # 报单状态  -2	取消交易 -1	无效 0	等待成交  1	部份交易  2	全部成交 3	已申报
 
+        self.valueGet = EMPTY_STRING
+        self.currencyGet = EMPTY_STRING
+        self.valuePay = EMPTY_STRING
+        self.currencyPay = EMPTY_STRING
+        self.valueGot = EMPTY_STRING
+        self.valuePaid = EMPTY_STRING
+
         self.orderTime = EMPTY_STRING           # 发单时间
         self.cancelTime = EMPTY_STRING          # 撤单时间
         
@@ -474,7 +481,12 @@ class VtOrderReq(object):
     
         self.orderType = EMPTY_STRING           # 市价，限价
         self.direction = EMPTY_STRING           # 买卖
-        
+
+        self.valueGet = EMPTY_STRING
+        self.currencyGet = EMPTY_STRING
+        self.valuePay = EMPTY_STRING
+        self.currencyPay = EMPTY_STRING
+
         # 以下为IB相关
         #self.productClass = EMPTY_UNICODE       # 合约类型
         #self.currency = EMPTY_STRING            # 合约货币

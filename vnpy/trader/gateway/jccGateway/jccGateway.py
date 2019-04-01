@@ -19,6 +19,7 @@ from vnpy.api.rest import RestClient, Request
 from vnpy.trader.vtGateway import *
 from vnpy.trader.vtFunction import getJsonPath
 from jingtum_python_lib.transaction import Transaction
+from jingtum_python_baselib.utils import JingtumBaseDecoder
 
 #from threading import Thread
 
@@ -40,8 +41,8 @@ orderStatusMap[STATUS_ORDERED] = 3
 
 # 方向和订单类型映射
 directionMap = {}
-directionMap[(DIRECTION_BUY)] = 'Buy'
-directionMap[(DIRECTION_SELL)] = 'Sell'
+directionMap[(DIRECTION_BUY)] = 'buy'
+directionMap[(DIRECTION_SELL)] = 'sell'
 
 orderTypeMap = {}
 orderTypeMap[(PRICETYPE_MARKETPRICE)] = 0
@@ -72,8 +73,8 @@ class JccServerInfo(object):
         self.exHosts = result['exHosts']
         self.infoHosts = result['infoHosts']
 
-        self.exchangeApiHost = self.exHosts[0]
-        self.infoApiHost = self.infoHosts[0]
+        self.exchangeApiHost = self.exHosts[-1]
+        self.infoApiHost = self.infoHosts[-1]
         print("self.exchangeApiHost is %s"%(self.exchangeApiHost))
         print("self.wsApiHost is %s"%(self.infoApiHost))
 
@@ -89,7 +90,6 @@ class JccGateway(VtGateway):
 
         self.accountDict = {}
         self.orderDict = {}
-        self.localOrderDict = {}
         #self.orderLocalDict = {}
 
         self.qryEnabled = False         # 是否要启动循环查询
@@ -101,6 +101,8 @@ class JccGateway(VtGateway):
         self.filePath = getJsonPath(self.fileName, __file__)
         self.exchangeHost = ''
         self.infoHost = ''
+        self.exchangeHosts = ''
+        self.infoHosts = ''
         #symbols_filepath = os.getcwd() + '\GatewayConfig' + '/' + self.fileName
 
     def connect(self):
@@ -122,10 +124,12 @@ class JccGateway(VtGateway):
         jccServer.getServerInfo()
         self.exchangeHost = 'https://' + jccServer.exchangeApiHost
         self.infoHost = 'http://' + jccServer.infoApiHost
+        self.exchangeHosts = ['https://' + host for host in jccServer.exHosts]
+        self.infoHosts = ['https://' + host for host in jccServer.infoHosts]
 
         try:
             account = str(setting['account'])
-            issuerDict = str(setting['issuerDict'])
+            issuerDict = setting['issuerDict']
             secretKey = str(setting['secretKey'])
             symbols = setting['symbols']
         except KeyError:
@@ -208,40 +212,30 @@ class JccGateway(VtGateway):
         self.qryEnabled = qryEnabled
 
     def processQueueOrder(self, data, historyFlag):
-        for d in data['data']:
-            # self.gateway.localID += 1
-            # localID = str(self.gateway.localID)
-
-            order = VtOrderData()
-            order.gatewayName = self.gatewayName
-
-            order.symbol = d['symbol']
-            order.exchange = 'JCC'
-            order.vtSymbol = '.'.join([order.exchange, order.symbol])
-
-            order.orderID = d['orderid']
-            # order.vtOrderID = '.'.join([self.gatewayName, localID])
-            order.vtOrderID = '.'.join([self.gatewayName, order.orderID])
-
-            order.price = float(d['price'])  # 委托价格
-            order.avgprice = float(d['avgprice'])  # 平均成交价
-            order.volume = float(d['amount']) + float(d['executedamount'])  # 委托数量
-            order.tradedVolume = float(d['executedamount'])  # 成交数量
-            order.status = orderStatusMapReverse[d['status']]  # 订单状态
-            order.direction = directionMapReverse[d['side']]  # 交易方向   0 买入 1 卖出
-            order.orderType = orderTypeMapReverse[d['type']]  # 订单类型  0	市场价  1	 限价
-
-            dt = datetime.fromtimestamp(d['timestamp'])
-            order.orderTime = dt.strftime('%Y-%m-%d %H:%M:%S')
-
-            if order.status == STATUS_ALLTRADED:
-                # order.vtTradeID =  '.'.join([self.gatewayName, order.orderID])
-                if historyFlag:
-                    self.onTrade(order)
-                else:
-                    self.onOrder(order)  # 普通推送更新委托列表
-            else:
-                self.onOrder(order)
+        for d in data['data']['transactions']:
+            if d.get('type') == 'offernew':
+                orderID = d['seq']
+                strOrderID = str(orderID)
+                if strOrderID in self.orderDict.keys():
+                    order = self.orderDict[strOrderID]
+                    for effects in d['effects']:
+                        if effects['effect'] == 'offer_funded' or effects['effect'] == 'offer_bought':
+                            order.status = STATUS_ALLTRADED
+                            self.onTrade(order)  # 普通推送更新委托列表
+            elif d.get('type') == 'offereffect':
+                for effects in d['effects']:
+                    orderID = effects['seq']
+                    strOrderID = str(orderID)
+                    if strOrderID in self.orderDict.keys():
+                        order = self.orderDict[strOrderID]
+                        if effects['effect'] == 'offer_funded' or effects['effect'] == 'offer_bought' :
+                            order.status = STATUS_ALLTRADED
+                            self.onTrade(order)  # 普通推送更新委托列表
+                        elif effects['effect'] == 'offer_partially_funded':
+                            order.status = STATUS_PARTTRADED
+                            order.valueGot = effects['got']['value']
+                            order.valuePaid = effects['paid']['value']
+                            self.onTrade(order)  # 普通推送更新委托列表
 
     def writeLog(self, msg):
         """"""
@@ -273,12 +267,12 @@ class JccExchangeApi(RestClient):
 
         self.accountDict = gateway.accountDict
         self.orderDict = gateway.orderDict
-        self.localOrderDict = gateway.localOrderDict
 
         self.accountid = ''  #
         self.cancelReqDict = {}
         self.orderBufDict = {}
         self.tickDict = {}
+        self.exchangeHost = ''
 
         #self.queryAccountThread = None
 
@@ -309,11 +303,12 @@ class JccExchangeApi(RestClient):
         """连接服务器"""
         self.account = account
         self.secretKey = secretKey
-        transaction = Transaction(None,None)
-        transaction.set_secret(self.secretKey)
+        self.transaction = Transaction(None,None)
+        self.transaction.set_secret(self.secretKey)
         self.symbols = symbols
         self.issuerDict = issuerDict
         self.loginTime = int(datetime.now().strftime('%y%m%d%H%M%S')) * self.orderID
+        self.exchangeHost = exchangeHost
 
         self.init(exchangeHost)
         self.start(sessionCount)
@@ -330,34 +325,33 @@ class JccExchangeApi(RestClient):
             r = http.request('GET', self.exchangeHost + '/exchange/sequence/' + self.account)
             data = r.data.decode()
             result = json.loads(data.replace("\n", ""))
-            if(result.code != '0'):
-                print(result.msg)
+            if(result['code'] != '0'):
+                print(result['msg'])
                 return
-            sequence = result.data.sequence
-            self.gateway.localID += 1
-            localID = str(self.gateway.localID)
+            sequence = result['data']['sequence']
+            localID = str(sequence)
             vtOrderID = '.'.join([self.gatewayName, localID])
 
             direction_ = directionMap[orderReq.direction]
             options = {
-                'Flags': 0,
+                'Flags': 0x00080000,
                 'Sequence': sequence,
                 'Account': self.account,
-                'Fee': 0.00001,
+                'Fee': 10,
                 'TransactionType': "OfferCreate",
                 'TakerGets': {
-                    'value': orderReq.valueGet,
-                    'currency': orderReq.currencyGet,
-                    'issuer': self.issuerDict[orderReq.currencyGet]
-                },
-                'TakerPays': {
-                    'value': orderReq.valuePay,
+                    'value': str(orderReq.valuePay),
                     'currency': orderReq.currencyPay,
                     'issuer': self.issuerDict[orderReq.currencyPay]
+                },
+                'TakerPays': {
+                    'value': str(orderReq.valueGet),
+                    'currency': orderReq.currencyGet,
+                    'issuer': self.issuerDict[orderReq.currencyGet]
                 }
             }
             self.transaction.parseJson(options)
-            sign = self.transaction.signing()
+            sign = str(self.transaction.signing())
             data = {
                 'sign': sign
             }
@@ -365,12 +359,12 @@ class JccExchangeApi(RestClient):
             order = VtOrderData()
             order.gatewayName = self.gatewayName
             order.symbol = orderReq.symbol
-            #order.exchange = 'JCC'
+            order.exchange = 'JCC'
             order.vtSymbol = '.'.join([order.exchange, order.symbol])
-            #order.orderID = localID
+            order.orderID = localID
             order.vtOrderID = vtOrderID
             order.direction = orderReq.direction
-            order.ordertType = orderReq.orderType
+            order.orderType = orderReq.orderType
             order.valueGet = orderReq.valueGet
             order.currencyGet = orderReq.currencyGet
             order.valuePay = orderReq.valuePay
@@ -439,47 +433,17 @@ class JccExchangeApi(RestClient):
 
     def queryOrder(self):
         """"""
-        for symbol in self.symbols:
-            req = {
-                'Symbol': symbol,
-                "OrderID": 100
-            }
-            path = '/api/v1/getorderinfo'
-            self.addRequest('POST', path, data=req,
-                            callback=self.onQueryOrder)
+        path = '/exchange/orders/' + self.account + '/1'
+        self.addRequest('GET', path, data=1,
+                        callback=self.onQueryOrder)
 
     # 获取JCC历史订单信息，只返回最近7天的信息
     def queryHistoryOrder(self):
         """"""
-        path = '/api/v1/gethistoryorder'
-        for symbol in self.symbols:
-            req = {
-                'Symbol': symbol,
-                "PageIndex": 1,  # 当前页数
-                "PageSize": 200,  # 每页数据条数，最多不超过200
-                "Status": orderStatusMap[STATUS_NOTTRADED]  # 未成交
-            }
-            self.addRequest('POST', path, data=req,
-                            callback=self.onQueryHistoryOrder)
-
-            req = {
-                'Symbol': symbol,
-                "PageIndex": 1,  # 当前页数
-                "PageSize": 200,  # 每页数据条数，最多不超过200
-                "Status": orderStatusMap[STATUS_PARTTRADED]  # 部分成交
-            }
-            self.addRequest('POST', path, data=req,
-                            callback=self.onQueryHistoryOrder)
-
-            req = {
-                'Symbol': symbol,
-                "PageIndex": 1,  # 当前页数
-                "PageSize": 200,  # 每页数据条数，最多不超过200
-                "Status": orderStatusMap[STATUS_ALLTRADED]  # 成交
-            }
-            self.addRequest('POST', path, data=req,
-                            callback=self.onQueryHistoryOrder)
-        self.gateway.writeLog('历史订单查询成功')
+        path = '/exchange/tx/' + self.account + '/1'
+        self.addRequest('GET', path, data=1,
+                        callback=self.onQueryHistoryOrder)
+        # self.gateway.writeLog('历史订单查询成功')
 
     def onQueryAccount(self, data, request):
         """"""
@@ -516,40 +480,15 @@ class JccExchangeApi(RestClient):
             return
 
     def onQueryOrder(self, data, request):
-        if data['result'] == 1:
+        if data['code'] == 0:
             try:
                 for d in data['data']:
-                    orderID = d['orderid']
+                    orderID = d['sequence']
                     strOrderID = str(orderID)
+                    order = self.orderDict[strOrderID]
 
-                    self.gateway.localID += 1
-                    localID = str(self.gateway.localID)
-
-                    #self.orderLocalDict[strOrderID] = localID
-                    self.localOrderDict[localID] = strOrderID
-
-                    order = VtOrderData()
-                    order.gatewayName = self.gatewayName
-
-                    order.orderID = localID
-                    order.vtOrderID = '.'.join([order.gatewayName, order.orderID])
-
-                    order.symbol = d['symbol']
-                    order.exchange = EXCHANGE_JCC
-                    order.vtSymbol = '.'.join([order.exchange, order.symbol])
-
-                    order.price = float(d['price'])  # 委托价格
-                    order.avgprice = float(d['avgprice'])  # 平均成交价
-                    order.totalVolume = float(d['amount'])  # 委托数量
-                    order.tradedVolume = float(d['executedamount'])  # 成交数量
-                    order.status = orderStatusMapReverse[str(d['status'])]  # 订单状态
-                    order.direction = directionMapReverse[d['side']]   # 交易方向   0 买入 1 卖出
-                    order.orderType = orderTypeMapReverse[d['type']]  # 订单类型  0	市场价  1	 限价
-
-                    dt = datetime.fromtimestamp(d['timestamp'])
-                    order.orderTime = dt.strftime('%H:%M:%S')
-
-                    self.orderDict[strOrderID] = order
+                    order.tradedVolume = order.totalVolume - float(d['amount'])  #交易数量
+                    order.totalVolume = float(d['amount'])
                     self.gateway.onOrder(order)
 
             except Exception as e:
@@ -563,7 +502,7 @@ class JccExchangeApi(RestClient):
             self.gateway.writeLog(msg)
 
     def onQueryHistoryOrder(self, data, request):
-        if data['result'] == 1:
+        if data['code'] == '0':
             self.gateway.processQueueOrder(data, historyFlag=1)
         else:
             try:
@@ -595,9 +534,9 @@ class JccExchangeApi(RestClient):
         localID = request.extra
         order = self.orderBufDict[localID]
 
-        if data['result'] != 1:
+        if data['code'] != '0':
             try:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             except Exception as e:
                 msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
@@ -606,12 +545,7 @@ class JccExchangeApi(RestClient):
             self.gateway.onOrder(order)
         else:
             order.status = STATUS_ORDERED  # 已报
-            strOrderID = data['data']['orderid']
-
-            self.localOrderDict[localID] = strOrderID
-            order.orderID = strOrderID  # 服务器返回orderid写入order
-            order.vtOrderID = '.'.join([self.gatewayName, order.orderID])  # 本地队列索引
-            self.orderDict[strOrderID] = order
+            self.orderDict[localID] = order
             self.gateway.onOrder(order)
 
             #req = self.cancelReqDict.get(localID, None)
@@ -683,7 +617,6 @@ class JccInfoApi(RestClient):
         self.loginTime = 0
         self.accountDict = gateway.accountDict
         self.orderDict = gateway.orderDict
-        self.localOrderDict = gateway.localOrderDict
 
         self.accountid = ''  #
         self.tickDict = {}
