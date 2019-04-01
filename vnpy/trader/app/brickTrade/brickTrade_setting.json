@@ -10,8 +10,8 @@
         "coinBeneGateway": {}
     },
     "exchangeRate": {
-        "CNY_USD": 0.1488,
-        "USD_CNY": 6.7191
+        "CNY_USD": 0.1489
     },
+    "amount": 1,
     "gapLimit": 0.02
 }

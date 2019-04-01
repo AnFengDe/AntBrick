@@ -2,9 +2,10 @@
 	"account": "jn5Cz1E468HLBF1ESc6PmqG2UxdBoDBHpn",
 	"secretKey": "sp5o1RYX54utAfzRqsxEA1S4gvHFU",
 	"sessionCount": 3,
-	"symbols": ["SWT-CNY","VCC-CNY","JMOAC-SWT"],
+	"symbols": ["SWT-CNY","VCC-CNY","JMOAC-CNY"],
 	"issuerDict": {
-		"SWT": "jn5Cz1E468HLBF1ESc6PmqG2UxdBoDBHpn",
-		"CNY": "jn5Cz1E468HLBF1ESc6PmqG2UxdBoDBHpn"
+		"SWT": "",
+		"CNY": "jGa9J9TkqtBcUoHe2zqhVFFbgUVED6o9or",
+		"JMOAC": "jGa9J9TkqtBcUoHe2zqhVFFbgUVED6o9or"
 	}
 }
