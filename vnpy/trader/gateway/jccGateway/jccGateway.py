@@ -318,17 +318,22 @@ class JccExchangeApi(RestClient):
         self.queryAccount()
         #self.queryHistoryOrder()
 
+    def getSequence(self):
+        http = urllib3.PoolManager()
+        r = http.request('GET', self.exchangeHost + '/exchange/sequence/' + self.account)
+        data = r.data.decode()
+        result = json.loads(data.replace("\n", ""))
+        if (result['code'] != '0'):
+            print(result['msg'])
+            return None
+        return result['data']['sequence']
+
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):  # type: (VtOrderReq)->str
         try:
-            http = urllib3.PoolManager()
-            r = http.request('GET', self.exchangeHost + '/exchange/sequence/' + self.account)
-            data = r.data.decode()
-            result = json.loads(data.replace("\n", ""))
-            if(result['code'] != '0'):
-                print(result['msg'])
-                return
-            sequence = result['data']['sequence']
+            sequence = None
+            while sequence is None:
+                sequence = self.getSequence()
             localID = str(sequence)
             vtOrderID = '.'.join([self.gatewayName, localID])
 
@@ -384,13 +389,17 @@ class JccExchangeApi(RestClient):
             print(e)
 
     # ----------------------------------------------------------------------
-    def cancelOrder(self, cancelReq):
+    def cancelOrder(self, seq):
         try:
+            sequence = None
+            while sequence is None:
+                sequence = self.getSequence()
             options = {
                 'Flags': 0,
+                'Sequence': sequence,
                 'Account': self.account,
-                'Fee': 0.00001,
-                'OfferSequence': cancelReq.Sequence,
+                'Fee': 10,
+                'OfferSequence': seq,
                 'TransactionType': "OfferCancel"
             }
             self.transaction.parseJson(options)
@@ -400,7 +409,8 @@ class JccExchangeApi(RestClient):
             }
         except Exception as e:
             print(e)
-        self.addRequest('DELETE', '/exchange/sign_cancel_order', callback=self.onCancelOrder, data=data, extra=cancelReq)
+        self.addRequest('DELETE', '/exchange/sign_cancel_order', callback=self.onCancelOrder, data=data,
+                        extra=self.orderDict.get('seq'))
 
     # 取消全部订单
     def cancelAllOrders(self):
@@ -408,11 +418,11 @@ class JccExchangeApi(RestClient):
         r = http.request('GET', self.exchangeHost + '/exchange/orders/' + self.account + '/1')
         data = r.data.decode()
         result = json.loads(data.replace("\n", ""))
-        if(result.code != '0'):
+        if(result['code'] != '0'):
             print(result.msg)
             return
-        for item in result.data:
-            self.cancelOrder(item.sequence)
+        for item in result['data']:
+            self.cancelOrder(item['sequence'])
 
     # 获取JCC最新币币行情数据
     def queryTicker(self):
@@ -554,16 +564,17 @@ class JccExchangeApi(RestClient):
 
     # ----------------------------------------------------------------------
     def onCancelOrder(self, data, request):
-        if data['result'] != 1:
+        if data['code'] != '0':
             try:
-                msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
+                msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             except Exception as e:
                 msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
         else:
             order = request.extra
-            order.status = STATUS_CANCELLED # 订单状态
-            self.gateway.onOrder(order)
+            if order is not None:
+                order.status = STATUS_CANCELLED # 订单状态
+                self.gateway.onOrder(order)
 
     def onCancelAllOrders(self, data, request):
         if data['result'] != 1:

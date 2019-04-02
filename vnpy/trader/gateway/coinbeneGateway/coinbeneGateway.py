@@ -29,7 +29,7 @@ orderStatusMap = {}
 #orderStatusMap[STATUS_NOTVALID] = -1
 orderStatusMap[STATUS_NOTTRADED] = 'unfilled'
 orderStatusMap[STATUS_PARTTRADED] = 'partialFilled'
-#orderStatusMap[STATUS_ALLTRADED] = 2
+orderStatusMap[STATUS_ALLTRADED] = 'filled'
 #orderStatusMap[STATUS_ORDERED] = 3
 
 # 方向和订单类型映射
@@ -321,6 +321,8 @@ class CoinbeneRestApi(RestClient):
             dic['sign'] = mysign
             self.addRequest('POST', '/v1/trade/order/place',
                             callback=self.onSendOrder,
+                            onFailed=self.onSendOrderFailed,
+                            onError=self.onSendOrderError,
                             data=dic,
                             extra=localID)
         except Exception as e:
@@ -442,16 +444,10 @@ class CoinbeneRestApi(RestClient):
                 orderID = d['orderid']
                 strOrderID = str(orderID)
 
-                self.gateway.localID += 1
-                localID = str(self.gateway.localID)
-
-                #self.orderLocalDict[strOrderID] = localID
-                self.localOrderDict[localID] = strOrderID
-
                 order = VtOrderData()
                 order.gatewayName = self.gatewayName
 
-                order.orderID = localID
+                order.orderID = strOrderID
                 order.vtOrderID = '.'.join([order.gatewayName, order.orderID])
 
                 order.symbol = d['symbol']

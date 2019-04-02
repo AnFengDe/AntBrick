@@ -220,6 +220,7 @@ class VtOrderData(VtBaseData):
         self.direction = EMPTY_UNICODE          # 报单方向 买入/卖出
         self.orderType = EMPTY_UNICODE          # 订单类型 0	市场价  1	 限价
         self.price = EMPTY_FLOAT                # 报单价格
+        self.avgprice = EMPTY_FLOAT             # 报单价格
         self.volume = EMPTY_FLOAT               # 报单数量
         self.totalVolume = EMPTY_INT            # 报单总金额
         self.tradedVolume = EMPTY_INT           # 报单成交数量
