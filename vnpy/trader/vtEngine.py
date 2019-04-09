@@ -4,7 +4,7 @@ from __future__ import division
 
 import shelve
 import logging
-import json
+#import json
 from collections import OrderedDict
 from copy import copy
 
@@ -13,8 +13,8 @@ from pymongo.errors import ConnectionFailure
 
 from vnpy.trader.vtGlobal import globalSetting
 from vnpy.trader.vtGateway import *
-from vnpy.trader.language import text
-from vnpy.trader.vtFunction import getTempPath, getJsonPath
+from vnpy.trader.language.chinese import text
+from vnpy.trader.vtFunction import getTempPath  #, getJsonPath
 
 
 
