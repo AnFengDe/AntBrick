@@ -104,8 +104,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.addConnectAction(sysMenu, d['gatewayName'], d['gatewayDisplayName'])
         """
 
-        sysMenu.addSeparator()
-        sysMenu.addAction(self.createAction(vtText.CONNECT_DATABASE, self.mainEngine.dbConnect, loadIconPath('database.ico')))
+        #sysMenu.addSeparator()
+        #sysMenu.addAction(self.createAction(vtText.CONNECT_DATABASE, self.mainEngine.dbConnect, loadIconPath('database.ico')))
         sysMenu.addSeparator()
         sysMenu.addAction(self.createAction(vtText.EXIT, self.close, loadIconPath('exit.ico')))
         
