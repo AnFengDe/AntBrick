@@ -10,7 +10,6 @@ import json
 import traceback
 from datetime import datetime
 from math import isnan
-
 from six import text_type
 
 
@@ -70,13 +69,6 @@ def getTempPath(name):
     path = os.path.join(tempPath, name)
     return path
 
-import sys
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(base_path, relative_path)
-
-
 # JSON配置文件路径
 jsonPathDict = {}
 
@@ -94,14 +86,10 @@ def getJsonPath(name, moduleFile):
         jsonPathDict[name] = currentJsonPath
         return currentJsonPath
 
-    print(resource_path(name))
-    print(resource_path(moduleFile))
     moduleFolder = os.path.abspath(os.path.dirname(moduleFile))
     moduleJsonPath = os.path.join(moduleFolder, '.', name)
-    print('moduleJsonPath is ',moduleJsonPath)
     jsonPathDict[name] = moduleJsonPath
 
-    #if os.path.exists(moduleJsonPath):
     return moduleJsonPath
 
 
