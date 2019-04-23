@@ -13,5 +13,5 @@
         "CNY_USD": 0.149
     },
     "amount": 1.0,
-    "gapLimit": 0.025
+    "gapLimit": 0.02
 }

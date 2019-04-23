@@ -27,7 +27,9 @@ from vnpy.trader.gateway import (jccGateway, coinbeneGateway, coinwGateway)
 # 加载上层应用
 #from vnpy.trader.app import (algoTrading)
 from vnpy.trader.app.alGo import (followBtcSelfTrade)  # 跟随BTC刷单交易
-from vnpy.trader.app import (brickTrade)  # 搬砖策略
+from vnpy.trader.app import (brickTrade)  # 被动搬砖策略
+from vnpy.trader.app import (brickTradePositive)  # 主动搬砖策略
+
 from vnpy.trader.app import (riskManager)  # 风控模块
 #from vnpy.trader.app import (dataRecorder)
 #from vnpy.trader.app import (optionMaster)
@@ -72,6 +74,7 @@ def main():
 #    me.addApp(algoTrading)
     me.addApp(followBtcSelfTrade)
     me.addApp(brickTrade)
+    me.addApp(brickTradePositive)
     me.addApp(riskManager)
 #    me.addApp(dataRecorder)
 #    me.addApp(optionMaster)

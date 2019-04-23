@@ -5,7 +5,7 @@ from .brickTradeEngine import BrickTradeEngine
 from .uiBrickTradeWidget import BrickTradeManager
 
 appName = 'BrickTrade'
-appDisplayName = '被动搬砖'
+appDisplayName = '主动搬砖'
 appEngine = BrickTradeEngine
 appWidget = BrickTradeManager
 appIco = 'at.ico'
