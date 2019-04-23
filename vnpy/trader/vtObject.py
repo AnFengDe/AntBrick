@@ -5,7 +5,7 @@ from logging import INFO
 import time
 from datetime import datetime
 
-from vnpy.trader.language import constant
+from vnpy.trader.language.chinese import constant
 from vnpy.trader.vtConstant import (EMPTY_FLOAT, EMPTY_INT, EMPTY_STRING, EMPTY_UNICODE)
 
 

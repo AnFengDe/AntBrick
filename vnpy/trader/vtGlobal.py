@@ -7,7 +7,7 @@
 import os
 import traceback
 import json
-from .vtFunction import loadJsonSetting
+from vnpy.trader.vtFunction import loadJsonSetting
 
 settingFileName = "VT_setting.json"
 globalSetting = loadJsonSetting(settingFileName)

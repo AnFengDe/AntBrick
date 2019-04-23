@@ -1,19 +1,19 @@
 {
     "IDCM.ETH_UT": {
-        "active": true,
-        "gateway": "IDCM",
-        "symbol": "ETH_UT",
-        "symbolBasicPrice": 3.0,
-        "symbolMinPrice": 3.0,
-        "symbolMaxPrice": 6.0,
-        "btcBasicPrice": 3700.0,
         "orderLevel": 20,
-        "orderPriceGap": 0.01,
-        "orderVolumeMin": 34.0,
         "orderVolumeMax": 80.0,
-        "btcCheckInterval": 1.0,
+        "symbolBasicPrice": 3.0,
+        "btcBasicPrice": 3700.0,
+        "selfTradeInterval": 3.0,
+        "orderPriceGap": 0.01,
+        "symbolMinPrice": 3.0,
+        "gateway": "IDCM",
+        "orderVolumeMin": 34.0,
         "placeOrderInterval": 11.0,
         "selfTradeVolume": 10.0,
-        "selfTradeInterval": 3.0
+        "active": true,
+        "symbolMaxPrice": 6.0,
+        "symbol": "ETH_UT",
+        "btcCheckInterval": 1.0
     }
 }

@@ -10,7 +10,6 @@ import json
 import traceback
 from datetime import datetime
 from math import isnan
-
 from six import text_type
 
 
@@ -70,7 +69,6 @@ def getTempPath(name):
     path = os.path.join(tempPath, name)
     return path
 
-
 # JSON配置文件路径
 jsonPathDict = {}
 
@@ -87,11 +85,13 @@ def getJsonPath(name, moduleFile):
     if os.path.isfile(currentJsonPath):
         jsonPathDict[name] = currentJsonPath
         return currentJsonPath
-    
+
     moduleFolder = os.path.abspath(os.path.dirname(moduleFile))
     moduleJsonPath = os.path.join(moduleFolder, '.', name)
     jsonPathDict[name] = moduleJsonPath
+
     return moduleJsonPath
+
 
 
 # 加载全局配置
