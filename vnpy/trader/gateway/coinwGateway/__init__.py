@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import
 from vnpy.trader import vtConstant
-from .coinwGateway import CoinwGateway
+from vnpy.trader.gateway.coinwGateway.coinwGateway import CoinwGateway
 
 gatewayClass = CoinwGateway
 gatewayName = 'Coinw'
