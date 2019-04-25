@@ -34,8 +34,8 @@ orderStatusMap[STATUS_PARTTRADED] = 'partialFilled'
 
 # 方向和订单类型映射
 directionMap = {}
-directionMap[(DIRECTION_BUY)] = 'buy-limit'
-directionMap[(DIRECTION_SELL)] = 'sell-limit'
+directionMap[(DIRECTION_BUY)] = 'buy'
+directionMap[(DIRECTION_SELL)] = 'sell'
 
 orderStatusMapReverse = {v: k for k, v in orderStatusMap.items()}
 directionMapReverse = {v: k for k, v in directionMap.items()}
@@ -251,6 +251,7 @@ class CoinwRestApi(RestClient):
             sign_list.append("{}={}".format(key, value))
         sign_list.sort()
         sign_str = "&".join(sign_list)
+        sign_str += ("&secret_key=" + self.secretKey)
         #mysecret = sign_str.upper().encode()
         mysecret = sign_str.encode()
         m = hashlib.md5()
@@ -273,13 +274,18 @@ class CoinwRestApi(RestClient):
         #self.reqThread.start()
         self.initSubscribe()
         self.getSymbol()
-        time.sleep(5)  # 等待getSymbol完成
-        if hasattr(self,'symbolsList'):
-            self.subscribe()
-            self.queryAccount()
-        else:
-            self.gateway.writeLog('getSymbol失败,请检查网络')
-            self.stop()
+        time.sleep(3)  # 等待getSymbol完成
+        for i in range(1, 5):
+            if hasattr(self,'symbolsList'):
+                self.subscribe()
+                self.queryAccount()
+                break
+            else:
+                if i < 5:
+                    time.sleep(2)
+                else:
+                    self.gateway.writeLog('getSymbol失败,请检查网络')
+                    self.stop()
 
         #self.queryOpenOrders()
 
@@ -291,19 +297,18 @@ class CoinwRestApi(RestClient):
             vtOrderID = '.'.join([self.gatewayName, localID])
 
             direction_ = directionMap[orderReq.direction]
-            timestamp = int(time.time())
             dic = {
                 'api_key': self.apiKey,
                 'price': orderReq.price,
                 'amount': orderReq.volume,  # 交易数量
-                'symbol': orderReq.symbol,  # 交易对
-                'type': direction_,  # buy-limit, sell-limit	限价买入 / 限价卖出
-                'secret': self.secretKey
+                'symbol': self.symbolsKeys[orderReq.symbol],  # 交易对
+                'type': direction_  # buy-limit, sell-limit	限价买入 / 限价卖出
+                #'secret_key': self.secretKey
             }
             path = "/appApi.html?action=trade&symbol=" + self.symbolsKeys[orderReq.symbol]
-            path += ("&type="+direction_)
-            path += ("&amount="+orderReq.volume)
-            path += ("&price=" + orderReq.price)
+            path += ("&type=" + str(direction_))
+            path += ("&amount=" + str(orderReq.volume))
+            path += ("&price=" + str(orderReq.price))
 
             # 缓存委托
             order = VtOrderData()
@@ -325,11 +330,13 @@ class CoinwRestApi(RestClient):
             self.orderBufDict[localID] = order
 
             mysign = self.generateSignature(**dic)
-            del dic['secret']
-            dic['sign'] = mysign
-            self.addRequest('POST', '/v1/trade/order/place',
+            newdic = {
+                'api_key': self.apiKey,
+                'sign': mysign
+            }
+            self.addRequest('POST', path,
                             callback=self.onSendOrder,
-                            data=dic,
+                            params=newdic,
                             extra=localID)
         except Exception as e:
             print(e)
@@ -372,12 +379,12 @@ class CoinwRestApi(RestClient):
     def queryAccount(self):
         timestamp = int(time.time())
         dic = {
-            'api_key': self.apiKey,
-            'secret_key': self.secretKey
+            'api_key': self.apiKey
+            #'secret_key': self.secretKey
         }
         try:
             mysign = self.generateSignature(**dic)
-            del dic['secret_key']
+            #del dic['secret_key']
             dic['sign'] = mysign
             self.addRequest('POST', '/appApi.html?action=userinfo', params=dic,
                             callback=self.onQueryAccount)
@@ -538,8 +545,8 @@ class CoinwRestApi(RestClient):
         localID = request.extra
         order = self.orderBufDict[localID]
 
-        if data['status'] != 'ok':
-            msg = '错误信息：%s' % (data['description'])
+        if data['code'] != 200:
+            msg = '错误代码：%s, 错误信息：%s' % (data['code'], data['msg'])
             self.gateway.writeLog(msg)
 
             order.status = STATUS_REJECTED
