@@ -273,9 +273,14 @@ class CoinwRestApi(RestClient):
         #self.reqThread.start()
         self.initSubscribe()
         self.getSymbol()
-        time.sleep(2)  # 等待getSymbol完成
-        self.subscribe()
-        self.queryAccount()
+        time.sleep(5)  # 等待getSymbol完成
+        if hasattr(self,'symbolsList'):
+            self.subscribe()
+            self.queryAccount()
+        else:
+            self.gateway.writeLog('getSymbol失败,请检查网络')
+            self.stop()
+
         #self.queryOpenOrders()
 
     # ----------------------------------------------------------------------
@@ -288,14 +293,17 @@ class CoinwRestApi(RestClient):
             direction_ = directionMap[orderReq.direction]
             timestamp = int(time.time())
             dic = {
-                'apiid': self.apiKey,
+                'api_key': self.apiKey,
                 'price': orderReq.price,
-                'quantity': orderReq.volume,  # 交易数量
+                'amount': orderReq.volume,  # 交易数量
                 'symbol': orderReq.symbol,  # 交易对
                 'type': direction_,  # buy-limit, sell-limit	限价买入 / 限价卖出
-                'secret': self.secretKey,
-                'timestamp': timestamp
+                'secret': self.secretKey
             }
+            path = "/appApi.html?action=trade&symbol=" + self.symbolsKeys[orderReq.symbol]
+            path += ("&type="+direction_)
+            path += ("&amount="+orderReq.volume)
+            path += ("&price=" + orderReq.price)
 
             # 缓存委托
             order = VtOrderData()
@@ -647,7 +655,7 @@ class CoinwRestApi(RestClient):
                 bids = data['data']['bids']
                 asks = data['data']['asks']
 
-                depth = 20
+                depth = 5
                 # 买单
                 try:
                     for index in range(depth):
