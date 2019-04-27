@@ -111,7 +111,7 @@ class MainEngine(object):
         if gateway:
             gateway.connect()
         
-        self.dbConnect()
+        #self.dbConnect()
    
     #----------------------------------------------------------------------
     def subscribe(self, subscribeReq, gatewayName):
