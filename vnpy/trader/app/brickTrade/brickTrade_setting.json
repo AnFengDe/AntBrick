@@ -1,5 +1,10 @@
 {
+    "gapLimit": 0.02,
     "amount": 1,
+    "gatewaySettings": {
+        "coinBeneGateway": {},
+        "jccGateway": {}
+    },
     "exchangeRate": {
         "CNY_USD": 0.1489
     },
@@ -8,10 +13,5 @@
         "JCC.SWT-CNY",
         "COINBENE.MOACUSDT",
         "COINBENE.SWTCUSDT"
-    ],
-    "gapLimit": 0.02,
-    "gatewaySettings": {
-        "jccGateway": {},
-        "coinBeneGateway": {}
-    }
+    ]
 }

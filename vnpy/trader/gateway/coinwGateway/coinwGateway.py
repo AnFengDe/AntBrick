@@ -278,6 +278,7 @@ class CoinwRestApi(RestClient):
         for i in range(1, 5):
             if hasattr(self,'symbolsList'):
                 self.subscribe()
+                time.sleep(1)
                 self.queryAccount()
                 break
             else:
@@ -605,6 +606,7 @@ class CoinwRestApi(RestClient):
                             callback=self.onDepth,
                             onFailed=self.onFailed,
                             onError=self.onError)
+            time.sleep(2)
 
     # ----------------------------------------------------------------------
     def onTick(self, data, request):

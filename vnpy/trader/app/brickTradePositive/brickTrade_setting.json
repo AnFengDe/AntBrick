@@ -1,4 +1,8 @@
 {
+    "amount": 1.0,
+    "exchangeRate": {
+        "CNY_USD": 0.149
+    },
     "vtSymbols": [
         "JCC.JMOAC-CNY",
         "JCC.SWT-CNY",
@@ -9,9 +13,5 @@
         "jccGateway": {},
         "coinBeneGateway": {}
     },
-    "exchangeRate": {
-        "CNY_USD": 0.149
-    },
-    "amount": 1.0,
     "gapLimit": 0.02
 }

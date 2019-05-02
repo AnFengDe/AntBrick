@@ -10,7 +10,7 @@ datas=[('D:\\jcc\\AntBrick\\vnpy\\trader\\app\\brickTrade\\*.json','vnpy\\trader
 
 * spec中的两个name是可执行文件的名字和目录名字，可以自行修改
 
-* 打包命令是 pyinstaller run.spec,打包成功会在dist目录下生成对应的CfgData目录，
+* 打包命令是 **pyinstaller run.spec**,打包成功会在dist目录下生成对应的CfgData目录，
 该目录可以拷贝到其他windows机器运行
 
 * 如果打包提示有很多dll找不到，可以用以下方式加入到spec文件中

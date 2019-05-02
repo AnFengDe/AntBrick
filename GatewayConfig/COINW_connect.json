@@ -3,5 +3,5 @@
 	"secretKey": "LAW1WVCRSA3YZIRPSPTCOSTI1Z0LKG6SV20C",
 	"sessionCount": 3,
 	"symbols": ["MOAC/CNYT","SWTC/CNYT"],
-	"coins": ["MOAC","SWTC", "USDT"]
+	"coins": ["MOAC","SWTC", "CNYT"]
 }

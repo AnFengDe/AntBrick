@@ -1,12 +1,12 @@
 {
-    "IDCM.USDT": {
-        "active": false,
-        "warnLimit": "100",
-        "minLimit": "77"
-    },
     "IDCM.ETH": {
         "active": false,
         "warnLimit": 120,
         "minLimit": "11"
+    },
+    "IDCM.USDT": {
+        "active": false,
+        "warnLimit": "100",
+        "minLimit": "77"
     }
 }
