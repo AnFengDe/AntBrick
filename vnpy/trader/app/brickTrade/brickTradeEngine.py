@@ -227,23 +227,7 @@ class BrickTradeEngine(object):
                     self.brickMap[order.vtOrderID]['watchStatus'] = False
                     self.brickMap[order.vtOrderID]['order'] = order
                     self.stage = 0
-
-    def watchCoinBeneOrder(self, order_id, vt_order_id):
-        while self.brickMap[vt_order_id]['watchStatus']:
-            self.coinBeneGateway.queryOrder(order_id)
-            time.sleep(1)
-
-    #----------------------------------------------------------------------
-    def updateTrade(self, event):
-        """更新成交数据"""
-        tick = event.dict_['data']
-        if tick.vtSymbol not in self.settingsDict["vtSymbols"]:
-            return
-
-        # 不处理撤单委托
-        order = event.dict_['data']
-        if order.status == STATUS_ALLTRADED:
-            if order.vtSymbol == "JCC.JMOAC-CNY" and self.stage == 1 and self.brickMap[order.vtOrderID]['status'] == 'ordered':
+            elif order.vtSymbol == "JCC.JMOAC-CNY" and self.stage == 1 and self.brickMap[order.vtOrderID]['status'] == 'ordered':
                 self.brickMap[order.vtOrderID]['status'] = 'filled'
                 orderReq = VtOrderReq()
                 orderReq.price = self.marketInfo["COINBENE.MOACUSDT"]["ask"]
@@ -262,6 +246,21 @@ class BrickTradeEngine(object):
                 self.writeLog(u'对冲挂单：%s, 单价：%.2f' % (orderReq.symbol, self.marketInfo["COINBENE.MOACUSDT"]["bid"]))
                 self.coinBeneGateway.sendOrder(orderReq)
 
+
+    def watchCoinBeneOrder(self, order_id, vt_order_id):
+        while self.brickMap[vt_order_id]['watchStatus']:
+            self.coinBeneGateway.queryOrder(order_id)
+            time.sleep(1)
+
+    #----------------------------------------------------------------------
+    def updateTrade(self, event):
+        """更新成交数据"""
+        tick = event.dict_['data']
+        if tick.vtSymbol not in self.settingsDict["vtSymbols"]:
+            return
+
+        # 不处理撤单委托
+        order = event.dict_['data']
 
     #----------------------------------------------------------------------
     def updateTimer(self, event):

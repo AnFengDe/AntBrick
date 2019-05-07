@@ -30,6 +30,7 @@ orderStatusMap = {}
 orderStatusMap[STATUS_NOTTRADED] = 'unfilled'
 orderStatusMap[STATUS_PARTTRADED] = 'partialFilled'
 orderStatusMap[STATUS_ALLTRADED] = 'filled'
+orderStatusMap[STATUS_PARTTRADED] = 'partialCanceled'
 #orderStatusMap[STATUS_ORDERED] = 3
 
 # 方向和订单类型映射
@@ -108,6 +109,9 @@ class CoinbeneGateway(VtGateway):
     def cancelOrder(self, cancelOrderReq):
         """撤单"""
         self.restApi.cancelOrder(cancelOrderReq)
+
+    def cancelAllOrders(self):
+        self.restApi.cancelAllOrders()
 
     def queryOrder(self, orderid):
         #查询委托
@@ -347,9 +351,52 @@ class CoinbeneRestApi(RestClient):
             print(e)
 
     # 取消全部订单
-    #def cancelAllOrders(self):
-    #    data = 1
-    #    self.addRequest('POST', '/api/v1/CancelAllOrders', callback=self.onCancelAllOrders, data=data)
+    def cancelAllOrders(self):
+        for symbol in self.symbols:
+            timestamp = int(time.time())
+            dic = {
+                'apiid': self.apiKey,
+                'secret':self.secretKey,
+                'timestamp':timestamp,
+                'symbol': symbol,
+            }
+            try:
+                mysign = self.generateSignature(**dic)
+                del dic['secret']
+                dic['sign'] = mysign
+                self.addRequest('POST', '/v1/trade/order/open-orders', callback=self.onQueryOpenOrdersAndCancel, data=dic, extra=1)
+            except Exception as e:
+                print(e)
+
+    def onQueryOpenOrdersAndCancel(self, data, request):
+        if data['status'] == 'ok':
+            if data['orders'] is None:
+                return
+            for d in data['orders']['result']:
+                order = VtOrderData()
+                order.gatewayName = self.gatewayName
+
+                order.symbol = d['symbol']
+                order.exchange = EXCHANGE_COINBENE
+                order.vtSymbol = '.'.join([order.exchange, order.symbol])
+
+                order.orderID = d['orderid']
+                # order.vtOrderID = '.'.join([self.gatewayName, localID])
+                order.vtOrderID = '.'.join([self.gatewayName, order.orderID])
+
+                order.price = float(d['price'])  # 委托价格
+                # order.avgprice = float(d['avgprice'])  # 平均成交价
+                order.volume = float(d['orderquantity'])  # 委托数量
+                order.tradedVolume = float(d['filledquantity'])  # 成交数量
+                order.status = orderStatusMapReverse[d['orderstatus']]  # 订单状态
+                order.direction = directionMapReverse[d['type']]  # 交易方向   0 买入 1 卖出
+                # order.orderType = orderTypeMapReverse[d['type']]  # 订单类型  0	市场价  1	 限价
+
+                dt = datetime.fromtimestamp(d['createtime'] / 1000)
+                order.orderTime = dt.strftime('%Y-%m-%d %H:%M:%S')
+
+                self.cancelOrder(order)
+
 
     # ----------------------------------------------------------------------
     def queryAccount(self):
@@ -486,7 +533,8 @@ class CoinbeneRestApi(RestClient):
         """
         下单失败回调：服务器明确告知下单失败
         """
-        order = request.extra
+        localID = request.extra
+        order = self.orderBufDict[localID]
         order.status = STATUS_REJECTED
         self.gateway.onOrder(order)
 
@@ -495,7 +543,8 @@ class CoinbeneRestApi(RestClient):
         """
         下单失败回调：连接错误
         """
-        order = request.extra
+        localID = request.extra
+        order = self.orderBufDict[localID]
         order.status = STATUS_REJECTED
         self.gateway.onOrder(order)
 

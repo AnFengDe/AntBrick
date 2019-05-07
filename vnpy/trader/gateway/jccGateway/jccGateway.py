@@ -221,7 +221,7 @@ class JccGateway(VtGateway):
                     for effects in d['effects']:
                         if effects['effect'] == 'offer_funded' or effects['effect'] == 'offer_bought':
                             order.status = STATUS_ALLTRADED
-                            self.onTrade(order)  # 普通推送更新委托列表
+                            self.onOrder(order)  # 普通推送更新委托列表
             elif d.get('type') == 'offereffect':
                 for effects in d['effects']:
                     orderID = effects['seq']
@@ -230,12 +230,12 @@ class JccGateway(VtGateway):
                         order = self.orderDict[strOrderID]
                         if effects['effect'] == 'offer_funded' or effects['effect'] == 'offer_bought' :
                             order.status = STATUS_ALLTRADED
-                            self.onTrade(order)  # 普通推送更新委托列表
+                            self.onOrder(order)  # 普通推送更新委托列表
                         elif effects['effect'] == 'offer_partially_funded':
                             order.status = STATUS_PARTTRADED
                             order.valueGot = effects['got']['value']
                             order.valuePaid = effects['paid']['value']
-                            self.onTrade(order)  # 普通推送更新委托列表
+                            self.onOrder(order)  # 普通推送更新委托列表
 
     def writeLog(self, msg):
         """"""
@@ -320,11 +320,14 @@ class JccExchangeApi(RestClient):
 
     def getSequence(self):
         http = urllib3.PoolManager()
-        r = http.request('GET', self.exchangeHost + '/exchange/sequence/' + self.account)
-        data = r.data.decode()
-        result = json.loads(data.replace("\n", ""))
-        if (result['code'] != '0'):
-            print(result['msg'])
+        try:
+            r = http.request('GET', self.exchangeHost + '/exchange/sequence/' + self.account)
+            data = r.data.decode()
+            result = json.loads(data.replace("\n", ""))
+            if (result['code'] != '0'):
+                print(result['msg'])
+                return None
+        except:
             return None
         return result['data']['sequence']
 
@@ -374,6 +377,9 @@ class JccExchangeApi(RestClient):
             order.currencyGet = orderReq.currencyGet
             order.valuePay = orderReq.valuePay
             order.currencyPay = orderReq.currencyPay
+
+            order.price = orderReq.price
+            order.volume = orderReq.volume
             #order.localID = localID
             # order.totalVolume = orderReq.volume * orderReq.price
             order.status = STATUS_UNKNOWN
@@ -383,6 +389,8 @@ class JccExchangeApi(RestClient):
 
             self.addRequest('POST', '/exchange/sign_order',
                             callback=self.onSendOrder,
+                            onError=self.onSendOrderError,
+                            onFailed=self.onSendOrderFailed,
                             data=data,
                             extra=localID)
         except Exception as e:
@@ -526,7 +534,8 @@ class JccExchangeApi(RestClient):
         """
         下单失败回调：服务器明确告知下单失败
         """
-        order = request.extra
+        localID = request.extra
+        order = self.orderBufDict[localID]
         order.status = STATUS_REJECTED
         self.gateway.onOrder(order)
 
@@ -535,7 +544,8 @@ class JccExchangeApi(RestClient):
         """
         下单失败回调：连接错误
         """
-        order = request.extra
+        localID = request.extra
+        order = self.orderBufDict[localID]
         order.status = STATUS_REJECTED
         self.gateway.onOrder(order)
 

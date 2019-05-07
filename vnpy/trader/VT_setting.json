@@ -10,7 +10,7 @@
 	"language": "chinese",
 
 	"logActive": true,
-	"logLevel": "debug",
+	"logLevel": "info",
 	"logConsole": true,
 	"logFile": true,
 
