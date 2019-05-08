@@ -30,7 +30,7 @@ orderStatusMap = {}
 orderStatusMap[STATUS_NOTTRADED] = 'unfilled'
 orderStatusMap[STATUS_PARTTRADED] = 'partialFilled'
 orderStatusMap[STATUS_ALLTRADED] = 'filled'
-orderStatusMap[STATUS_PARTTRADED] = 'partialCanceled'
+orderStatusMap[STATUS_PARTTRADED_CANCEL] = 'partialCanceled'
 #orderStatusMap[STATUS_ORDERED] = 3
 
 # 方向和订单类型映射

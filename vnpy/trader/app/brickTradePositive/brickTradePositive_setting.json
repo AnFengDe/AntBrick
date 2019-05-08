@@ -5,14 +5,12 @@
     },
     "vtSymbols": [
         "JCC.JMOAC-CNY",
-        "JCC.SWT-CNY",
-        "COINBENE.MOACUSDT",
-        "COINBENE.SWTCUSDT"
+        "COINBENE.MOACUSDT"
     ],
     "gatewaySettings": {
         "jccGateway": {},
         "coinBeneGateway": {}
     },
-    "gapLimit": 0.02,
-    "step": 0.001
+    "gapLimit": 0.015,
+    "step": 0.0001
 }
