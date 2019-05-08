@@ -3,14 +3,59 @@
     "exchangeRate": {
         "CNY_USD": 0.1477
     },
+    "vtSymbolsSwt": [
+        "JCC.SWT-CNY",
+        "COINBENE.SWTCUSDT"
+    ],
+    "gatewaySettingsSwt": {
+        "jccGateway": {
+            "VT_SYMBOL": "JCC.SWT-CNY",
+            "SYMBOL": "SWT-CNY",
+            "CURRENCY_SYMBOLS": [
+                "JMOAC",
+                "CNY"
+            ]
+        },
+        "coinBeneGateway": {
+            "VT_SYMBOL": "COINBENE.SWTCUSDT",
+            "SYMBOL": "SWTCUSDT",
+            "CURRENCY_SYMBOLS": [
+                "SWTC",
+                "USDT"
+            ]
+        }
+    },
     "vtSymbols": [
         "JCC.JMOAC-CNY",
         "COINBENE.MOACUSDT"
     ],
     "gatewaySettings": {
-        "jccGateway": {},
-        "coinBeneGateway": {}
+        "fromGatewayName": "coinBeneGateway",
+        "jccGateway": {
+            "VT_SYMBOL": "JCC.JMOAC-CNY",
+            "SYMBOL": "JMOAC-CNY",
+            "CURRENCY_SYMBOLS": [
+                "JMOAC",
+                "CNY"
+            ]
+        },
+        "coinBeneGateway": {
+            "VT_SYMBOL": "COINBENE.MOACUSDT",
+            "SYMBOL": "MOACUSDT",
+            "CURRENCY_SYMBOLS": [
+                "MOAC",
+                "USDT"
+            ]
+        },
+        "coinwGateway": {
+            "VT_SYMBOL": "Coinw.MOACUSDT",
+            "SYMBOL": "MOACUSDT",
+            "CURRENCY_SYMBOLS": [
+                "MOAC",
+                "USDT"
+            ]
+        }
     },
-    "gapLimit": 0.015,
+    "gapLimit": 0.02,
     "step": 0.0001
 }
