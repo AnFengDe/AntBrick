@@ -343,6 +343,7 @@ class BrickTradeEngine(object):
 
         if self.active:
             self.writeLog(u'搬砖功能启动')
+            self.loadSetting()
             self.reqThread = Thread(target=self.startTrade)
             self.reqThread.start()
             #self.startTrade()
@@ -354,5 +355,5 @@ class BrickTradeEngine(object):
     #----------------------------------------------------------------------
     def stop(self):
         """停止"""
-        self.saveSetting()
+        pass
 

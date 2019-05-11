@@ -1,13 +1,46 @@
 {
-    "amount": 1.0,
+    "amount": 3.0,
     "exchangeRate": {
         "CNY_USD": 0.1477
+    },
+    "vtSymbols": [
+        "JCC.JMOAC-CNY",
+        "COINBENE.MOACUSDT",
+        "Coinw.MOAC/CNYT"
+    ],
+    "gatewaySettings": {
+        "fromGatewayName": "COINBENE",
+        "JCC": {
+            "VT_SYMBOL": "JCC.JMOAC-CNY",
+            "SYMBOL": "JMOAC-CNY",
+            "CURRENCY_SYMBOLS": [
+                "JMOAC",
+                "CNY"
+            ]
+        },
+        "COINBENE": {
+            "VT_SYMBOL": "COINBENE.MOACUSDT",
+            "SYMBOL": "MOACUSDT",
+            "CURRENCY_SYMBOLS": [
+                "MOAC",
+                "USDT"
+            ]
+        },
+        "Coinw": {
+            "VT_SYMBOL": "Coinw.MOAC/CNYT",
+            "SYMBOL": "MOAC/CNYT",
+            "CURRENCY_SYMBOLS": [
+                "MOAC",
+                "CNYT"
+            ]
+        }
     },
     "vtSymbolsSwt": [
         "JCC.SWT-CNY",
         "COINBENE.SWTCUSDT"
     ],
     "gatewaySettingsSwt": {
+        "fromGatewayName": "COINBENE",
         "jccGateway": {
             "VT_SYMBOL": "JCC.SWT-CNY",
             "SYMBOL": "SWT-CNY",
@@ -25,37 +58,7 @@
             ]
         }
     },
-    "vtSymbols": [
-        "JCC.JMOAC-CNY",
-        "COINBENE.MOACUSDT"
-    ],
-    "gatewaySettings": {
-        "fromGatewayName": "coinBeneGateway",
-        "jccGateway": {
-            "VT_SYMBOL": "JCC.JMOAC-CNY",
-            "SYMBOL": "JMOAC-CNY",
-            "CURRENCY_SYMBOLS": [
-                "JMOAC",
-                "CNY"
-            ]
-        },
-        "coinBeneGateway": {
-            "VT_SYMBOL": "COINBENE.MOACUSDT",
-            "SYMBOL": "MOACUSDT",
-            "CURRENCY_SYMBOLS": [
-                "MOAC",
-                "USDT"
-            ]
-        },
-        "coinwGateway": {
-            "VT_SYMBOL": "Coinw.MOACUSDT",
-            "SYMBOL": "MOACUSDT",
-            "CURRENCY_SYMBOLS": [
-                "MOAC",
-                "USDT"
-            ]
-        }
-    },
-    "gapLimit": 0.02,
-    "step": 0.0001
+    "gapLimit": 0.036,
+    "step": 0.0001,
+    "precision": 4
 }

@@ -56,6 +56,8 @@ class BrickTradeManager(QtWidgets.QWidget):
         self.lineGapLimit = QtWidgets.QLineEdit()
         self.lineUsdtCnyRate = QtWidgets.QLineEdit()
         self.lineAmount = QtWidgets.QLineEdit()
+        self.lineStep = QtWidgets.QLineEdit()
+        self.linePrecision = QtWidgets.QLineEdit()
 
         Label = QtWidgets.QLabel
 
@@ -66,6 +68,10 @@ class BrickTradeManager(QtWidgets.QWidget):
         gridBtcCheck.addWidget(self.lineUsdtCnyRate, 1, 1)
         gridBtcCheck.addWidget(Label(u'单笔挂单金额'), 2, 0)
         gridBtcCheck.addWidget(self.lineAmount, 2, 1)
+        gridBtcCheck.addWidget(Label(u'价差步进量'), 3, 0)
+        gridBtcCheck.addWidget(self.lineStep, 3, 1)
+        gridBtcCheck.addWidget(Label(u'价格保留精度'), 4, 0)
+        gridBtcCheck.addWidget(self.linePrecision, 4, 1)
         #
         self.buttonSaveSetting = QtWidgets.QPushButton(u'保存配置')
         self.buttonSaveSetting.setStyleSheet("background-color: blue")
@@ -98,9 +104,11 @@ class BrickTradeManager(QtWidgets.QWidget):
         setting = self.brickEngine.settingsDict
 
         try:
-            self.lineGapLimit.setText(str(float(setting['gapLimit']) * 100))
+            self.lineGapLimit.setText(str(round(float(setting['gapLimit']) * 100, 6)))
             self.lineUsdtCnyRate.setText(str(setting['exchangeRate']['CNY_USD']))
             self.lineAmount.setText(str(setting['amount']))
+            self.lineStep.setText(str(setting['step']))
+            self.linePrecision.setText(str(setting['precision']))
         except Exception as e:
             print(e)
 
@@ -108,9 +116,11 @@ class BrickTradeManager(QtWidgets.QWidget):
         # 写入配置到settingsDict
         try:
             setting = self.brickEngine.settingsDict
-            setting['gapLimit'] = float(self.lineGapLimit.text()) / 100
+            setting['gapLimit'] = round(float(self.lineGapLimit.text()) / 100, 8)
             setting['exchangeRate']['CNY_USD'] = float(self.lineUsdtCnyRate.text())
             setting['amount'] = float(self.lineAmount.text())
+            setting['step'] = float(self.lineStep.text())
+            setting['precision'] = int(self.linePrecision.text())
         except Exception as e:
             print(e)
 

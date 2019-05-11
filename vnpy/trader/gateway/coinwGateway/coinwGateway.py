@@ -25,17 +25,18 @@ EXCHANGE_Coinw = "Coinw"
 
 # 委托状态类型映射
 orderStatusMap = {}
-#orderStatusMap[STATUS_CANCELLED] = -2
 #orderStatusMap[STATUS_NOTVALID] = -1
-orderStatusMap[STATUS_NOTTRADED] = 'unfilled'
-orderStatusMap[STATUS_PARTTRADED] = 'partialFilled'
+orderStatusMap[STATUS_NOTTRADED] = '1'
+orderStatusMap[STATUS_PARTTRADED] = '2'
+orderStatusMap[STATUS_ALLTRADED] = '3'
+orderStatusMap[STATUS_CANCELLED] = '4'
 #orderStatusMap[STATUS_ALLTRADED] = 2
 #orderStatusMap[STATUS_ORDERED] = 3
 
 # 方向和订单类型映射
 directionMap = {}
-directionMap[(DIRECTION_BUY)] = 'buy'
-directionMap[(DIRECTION_SELL)] = 'sell'
+directionMap[(DIRECTION_BUY)] = 0
+directionMap[(DIRECTION_SELL)] = 1
 
 orderStatusMapReverse = {v: k for k, v in orderStatusMap.items()}
 directionMapReverse = {v: k for k, v in directionMap.items()}
@@ -109,6 +110,17 @@ class CoinwGateway(VtGateway):
         """撤单"""
         self.restApi.cancelOrder(cancelOrderReq)
 
+    def cancelAllOrders(self):
+        self.restApi.cancelAllOrders()
+
+    def queryOrder(self, orderid):
+        #查询委托
+        self.restApi.queryOrder(orderid)
+
+    def queryOpenOrders(self):
+        #查询委托
+        self.restApi.queryOpenOrders()
+
     # ----------------------------------------------------------------------
     def close(self):
         """关闭"""
@@ -161,34 +173,28 @@ class CoinwGateway(VtGateway):
         self.restApi.queryAccount()
 
     def processQueueOrder(self, data):
-        if data['orders'] is None:
+        if data['data'] is None:
             return
-        for d in data['orders']['result']:
-            # self.gateway.localID += 1
-            # localID = str(self.gateway.localID)
-
+        for d in data['data']:
             order = VtOrderData()
+            order.orderID = str(d['id'])
             order.gatewayName = self.gatewayName
-
-            order.symbol = d['symbol']
+            order.vtOrderID = '.'.join([order.gatewayName, order.orderID])
             order.exchange = EXCHANGE_Coinw
+            order.symbol=data['symbol']
             order.vtSymbol = '.'.join([order.exchange, order.symbol])
 
-            order.orderID = d['orderid']
-            # order.vtOrderID = '.'.join([self.gatewayName, localID])
-            order.vtOrderID = '.'.join([self.gatewayName, order.orderID])
-
             order.price = float(d['price'])  # 委托价格
-            #order.avgprice = float(d['avgprice'])  # 平均成交价
-            order.volume = float(d['orderquantity'])  # 委托数量
-            order.tradedVolume = float(d['filledquantity'])  # 成交数量
-            order.status = orderStatusMapReverse[d['orderstatus']]  # 订单状态
+            order.avgprice = float(d['price'])  # 平均成交价
+            order.totalVolume = float(d['count'])  # 委托数量
+            order.tradedVolume = float(d['success_count'])  # 成交数量
+            order.status = orderStatusMapReverse[str(d['status'])]  # 订单状态
             order.direction = directionMapReverse[d['type']]  # 交易方向   0 买入 1 卖出
-            #order.orderType = orderTypeMapReverse[d['type']]  # 订单类型  0	市场价  1	 限价
 
-            dt = datetime.fromtimestamp(d['createtime']/1000)
-            order.orderTime = dt.strftime('%Y-%m-%d %H:%M:%S')
+            dt = datetime.fromtimestamp(d['timestamp'])
+            order.orderTime = dt.strftime('%H:%M:%S')
 
+            self.orderDict[strOrderID] = order
             self.onOrder(order)
 
     def writeLog(self, msg):
@@ -277,7 +283,7 @@ class CoinwRestApi(RestClient):
         time.sleep(3)  # 等待getSymbol完成
         for i in range(1, 5):
             if hasattr(self,'symbolsList'):
-                self.subscribe()
+                self.subscribe(None)
                 time.sleep(1)
                 self.queryAccount()
                 break
@@ -337,6 +343,8 @@ class CoinwRestApi(RestClient):
             }
             self.addRequest('POST', path,
                             callback=self.onSendOrder,
+                            onFailed=self.onSendOrderFailed,
+                            onError=self.onSendOrderError,
                             params=newdic,
                             extra=localID)
         except Exception as e:
@@ -344,21 +352,69 @@ class CoinwRestApi(RestClient):
 
     # ----------------------------------------------------------------------
     def cancelOrder(self, cancelReq):
-        timestamp = int(time.time())
+        dic = {
+            'api_key': self.apiKey,
+            'id' : cancelReq.orderID
+            # 'secret_key': self.secretKey
+        }
         try:
-            dic = {
-                'apiid': self.apiKey,
-                'orderid': cancelReq.orderID,
-                'secret': self.secretKey,
-                'timestamp': timestamp
-            }
-
             mysign = self.generateSignature(**dic)
-            del dic['secret']
+            # del dic['secret_key']
             dic['sign'] = mysign
-            self.addRequest('POST', '/v1/trade/order/cancel', callback=self.onCancelOrder, data=dic, extra=cancelReq)
+            newdic = {
+                'api_key': self.apiKey,
+                'sign': mysign
+            }
+            self.addRequest('POST', '/appApi.html?action=cancel_entrust&id=' + cancelReq.orderID, params=newdic,
+                            callback=self.onCancelOrder, extra=cancelReq)
         except Exception as e:
             print(e)
+
+    # 取消全部订单
+    def cancelAllOrders(self):
+        for symbol in self.symbols:
+            dic = {
+                'api_key': self.apiKey,
+                'symbol': self.symbolsKeys[symbol]
+                # 'secret_key': self.secretKey
+            }
+            try:
+                mysign = self.generateSignature(**dic)
+                # del dic['secret_key']
+                dic['sign'] = mysign
+                newdic = {
+                    'api_key': self.apiKey,
+                    'sign': mysign
+                }
+                self.addRequest('POST', '/appApi.html?action=entrust&symbol=' + self.symbolsKeys[symbol], params=newdic,
+                                callback=self.onQueryOpenOrdersAndCancel, extra=symbol)
+            except Exception as e:
+                print(e)
+
+    def onQueryOpenOrdersAndCancel(self, data, request):
+        if data['code'] == 200:
+            if data['data'] is None:
+                return
+            for d in data['data']:
+                order = VtOrderData()
+                order.orderID = str(d['id'])
+                order.gatewayName = self.gatewayName
+                order.vtOrderID = '.'.join([order.gatewayName, order.orderID])
+                order.exchange = EXCHANGE_Coinw
+                order.symbol = request.extra
+                order.vtSymbol = '.'.join([order.exchange, order.symbol])
+
+                order.price = float(d['prize'])  # 委托价格
+                order.avgprice = float(d['prize'])  # 平均成交价
+                order.totalVolume = float(d['count'])  # 委托数量
+                order.tradedVolume = float(d['success_count'])  # 成交数量
+                order.status = orderStatusMapReverse[str(d['status'])]  # 订单状态
+                order.direction = directionMapReverse[d['type']]  # 交易方向   0 买入 1 卖出
+
+                dt = datetime.fromtimestamp(d['createTime']/1000)
+                order.orderTime = dt.strftime('%H:%M:%S')
+
+                self.cancelOrder(order)
 
     # 查询虚拟币对应Symbol和对应交易对
     def getSymbol(self):
@@ -393,36 +449,45 @@ class CoinwRestApi(RestClient):
             print(e)
             #time.sleep(5)  # 每隔5秒刷新账户信息
 
-    def queryOrder(self):
-        """"""
-        for symbol in self.symbols:
-            req = {
-                'Symbol': symbol,
-                "OrderID": 100
+    def queryOrder(self, orderid):
+        dic = {
+            'api_key': self.apiKey,
+            'id' : orderid
+            # 'secret_key': self.secretKey
+        }
+        try:
+            mysign = self.generateSignature(**dic)
+            # del dic['secret_key']
+            dic['sign'] = mysign
+            newdic = {
+                'api_key': self.apiKey,
+                'sign': mysign
             }
-            path = '/api/v1/getorderinfo'
-            self.addRequest('POST', path, data=req,
+            self.addRequest('POST', '/appApi.html?action=order&id=' + orderid, params=newdic,
                             callback=self.onQueryOrder)
+        except Exception as e:
+            print(e)
 
     # 获取Coinw当前委托
     def queryOpenOrders(self):
         for symbol in self.symbols:
-            timestamp = int(time.time())
             dic = {
-                'apiid': self.apiKey,
-                'secret':self.secretKey,
-                'timestamp':timestamp,
-                'symbol': symbol,
+                'api_key': self.apiKey,
+                'symbol': self.symbolsKeys[symbol]
+                # 'secret_key': self.secretKey
             }
             try:
                 mysign = self.generateSignature(**dic)
-                del dic['secret']
+                # del dic['secret_key']
                 dic['sign'] = mysign
-                self.addRequest('POST', '/v1/trade/order/open-orders', data=dic,
-                                callback=self.onQueryOpenOrders)
+                newdic = {
+                    'api_key': self.apiKey,
+                    'sign': mysign
+                }
+                self.addRequest('POST', '/appApi.html?action=entrust&symbol=' + self.symbolsKeys[symbol], params=newdic,
+                                callback=self.onQueryOpenOrders, extra=symbol)
             except Exception as e:
                 print(e)
-        self.gateway.writeLog('当前订单查询成功')
 
     # 查询虚拟币对应Symbol和对应交易对
     def onGetSymbol(self, data, request):
@@ -473,41 +538,36 @@ class CoinwRestApi(RestClient):
             return
 
     def onQueryOrder(self, data, request):
-        if data['result'] == 'ok':
+        if data['code'] == 200:
             try:
                 for d in data['data']:
-                    orderID = d['orderid']
+                    orderID = d['id']
                     strOrderID = str(orderID)
 
-                    self.gateway.localID += 1
-                    localID = str(self.gateway.localID)
+                    if strOrderID in self.orderDict.keys():
+                        order = self.orderDict[strOrderID]
+                        order.gatewayName = self.gatewayName
+                        order.vtOrderID = '.'.join([order.gatewayName, order.orderID])
+                        order.exchange = EXCHANGE_Coinw
+                        order.vtSymbol = '.'.join([order.exchange, order.symbol])
 
-                    #self.orderLocalDict[strOrderID] = localID
-                    self.localOrderDict[localID] = strOrderID
+                        order.price = float(d['prize'])  # 委托价格
+                        order.avgprice = float(d['prize'])  # 平均成交价
+                        order.totalVolume = float(d['count'])  # 委托数量
+                        order.tradedVolume = float(d['success_count'])  # 成交数量
+                        order.status = orderStatusMapReverse[str(d['status'])]  # 订单状态
+                        if order.status != STATUS_CANCELLED:
+                            if order.tradedVolume > 0 and order.tradedVolume < order.totalVolume:
+                                order.status = STATUS_PARTTRADED
+                            elif order.tradedVolume > 0:
+                                order.status = STATUS_ALLTRADED
+                        order.direction = directionMapReverse[d['type']]   # 交易方向   0 买入 1 卖出
 
-                    order = VtOrderData()
-                    order.gatewayName = self.gatewayName
+                        dt = datetime.fromtimestamp(data['time']/1000)
+                        order.orderTime = dt.strftime('%H:%M:%S')
 
-                    order.orderID = localID
-                    order.vtOrderID = '.'.join([order.gatewayName, order.orderID])
-
-                    order.symbol = d['symbol']
-                    order.exchange = EXCHANGE_Coinw
-                    order.vtSymbol = '.'.join([order.exchange, order.symbol])
-
-                    order.price = float(d['price'])  # 委托价格
-                    order.avgprice = float(d['avgprice'])  # 平均成交价
-                    order.totalVolume = float(d['amount'])  # 委托数量
-                    order.tradedVolume = float(d['executedamount'])  # 成交数量
-                    order.status = orderStatusMapReverse[str(d['status'])]  # 订单状态
-                    order.direction = directionMapReverse[d['side']]   # 交易方向   0 买入 1 卖出
-                    order.orderType = orderTypeMapReverse[d['type']]  # 订单类型  0	市场价  1	 限价
-
-                    dt = datetime.fromtimestamp(d['timestamp'])
-                    order.orderTime = dt.strftime('%H:%M:%S')
-
-                    self.orderDict[strOrderID] = order
-                    self.gateway.onOrder(order)
+                        self.orderDict[strOrderID] = order
+                        self.gateway.onOrder(order)
 
             except Exception as e:
                 print('Exception')
@@ -517,10 +577,11 @@ class CoinwRestApi(RestClient):
             self.gateway.writeLog(msg)
 
     def onQueryOpenOrders(self, data, request):
-        if data['status'] == 'ok':
+        if data['code'] == 200:
+            data['symbol'] = request.extra
             self.gateway.processQueueOrder(data)
         else:
-            msg = '错误信息：%s' % (data['description'])
+            msg = '错误信息：%s' % (data['msg'])
             self.gateway.writeLog(msg)
 
     # ----------------------------------------------------------------------
@@ -554,7 +615,7 @@ class CoinwRestApi(RestClient):
             self.gateway.onOrder(order)
         else:
             order.status = STATUS_ORDERED  # 已报
-            strOrderID = data['orderid']
+            strOrderID = str(data['data'])
 
             self.localOrderDict[localID] = strOrderID
             order.orderID = strOrderID  # 服务器返回orderid写入order
@@ -568,8 +629,8 @@ class CoinwRestApi(RestClient):
 
     # ----------------------------------------------------------------------
     def onCancelOrder(self, data, request):
-        if data['status'] != 'ok':
-            msg = '错误信息：%s' % (data['description'])
+        if data['code'] != 200:
+            msg = '错误信息：%s' % (data['msg'])
             self.gateway.writeLog(msg)
         else:
             order = request.extra
@@ -596,7 +657,7 @@ class CoinwRestApi(RestClient):
             self.tickDict[symbol] = tick
             self.dealDict[symbol] = tick
 
-    def subscribe(self):
+    def subscribe(self, subscribeReq):
         #depth = 5
         #dealSize = 20
         for symbol in self.symbols:

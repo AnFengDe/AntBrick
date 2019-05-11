@@ -55,16 +55,18 @@ class BrickTradeEngine(object):
         self.onOrderCancelled = None
 
         self.fromGatewayName = self.settingsDict["gatewaySettings"]["fromGatewayName"]
-        if self.fromGatewayName == "coinBeneGateway":
+        if self.fromGatewayName == "COINBENE":
             self.fromGateway = self.coinBeneGateway
-        elif self.fromGatewayName == "coinwGateway":
+            self.exchange = self.settingsDict["exchangeRate"]["CNY_USD"]
+        elif self.fromGatewayName == "Coinw":
             self.fromGateway = self.coinwGateway
+            self.exchange = 1
         self.VT_SYMBOL_A = self.settingsDict["gatewaySettings"][self.fromGatewayName]["VT_SYMBOL"]
         self.SYMBOL_A = self.settingsDict["gatewaySettings"][self.fromGatewayName]["SYMBOL"]
         self.CURRENCY_SYMBOLS_A = self.settingsDict["gatewaySettings"][self.fromGatewayName]["CURRENCY_SYMBOLS"]
-        self.VT_SYMBOL_B = self.settingsDict["gatewaySettings"]["jccGateway"]["VT_SYMBOL"]
-        self.SYMBOL_B = self.settingsDict["gatewaySettings"]["jccGateway"]["SYMBOL"]
-        self.CURRENCY_SYMBOLS_B = self.settingsDict["gatewaySettings"]["jccGateway"]["CURRENCY_SYMBOLS"]
+        self.VT_SYMBOL_B = self.settingsDict["gatewaySettings"]["JCC"]["VT_SYMBOL"]
+        self.SYMBOL_B = self.settingsDict["gatewaySettings"]["JCC"]["SYMBOL"]
+        self.CURRENCY_SYMBOLS_B = self.settingsDict["gatewaySettings"]["JCC"]["CURRENCY_SYMBOLS"]
         self.brickMap = {}
 
     #----------------------------------------------------------------------
@@ -83,6 +85,10 @@ class BrickTradeEngine(object):
             jsonD = json.dumps(self.settingsDict, indent=4)
             #jsonD = json.dumps(d, indent=4)
             f.write(jsonD)
+            if self.fromGatewayName == "COINBENE":
+                self.exchange = self.settingsDict["exchangeRate"]["CNY_USD"]
+            elif self.fromGatewayName == "Coinw":
+                self.exchange = 1
 
     #----------------------------------------------------------------------
     def registerEvent(self):
@@ -135,12 +141,10 @@ class BrickTradeEngine(object):
 
     def seekBrickGap(self):
         if self.marketInfo.get(self.VT_SYMBOL_B) is not None and self.marketInfo.get(self.VT_SYMBOL_A) is not None:
-            gap = (self.marketInfo[self.VT_SYMBOL_B]["bid"] * self.settingsDict["exchangeRate"]["CNY_USD"]) / \
-                  self.marketInfo[self.VT_SYMBOL_A]["ask"] - 1
+            gap = (self.marketInfo[self.VT_SYMBOL_B]["bid"] * self.exchange) / self.marketInfo[self.VT_SYMBOL_A]["ask"] - 1
             if gap > self.settingsDict["gapLimit"]:
                 print((self.CURRENCY_SYMBOLS_A[0] + ": JCC BID:%f\t" + self.fromGatewayName + " ASK:%f\t Gap: %f") % (self.marketInfo[self.VT_SYMBOL_B]["bid"], self.marketInfo[self.VT_SYMBOL_A]["ask"], gap))
-                usdt_amount = self.settingsDict["amount"] * self.marketInfo[self.VT_SYMBOL_B]["bid"] * \
-                              self.settingsDict["exchangeRate"]["CNY_USD"]
+                usdt_amount = self.settingsDict["amount"] * self.marketInfo[self.VT_SYMBOL_B]["bid"] * self.exchange
                 if self.stage == 0 and self.jccGateway.accountDict[self.CURRENCY_SYMBOLS_B[0]].available >= self.settingsDict["amount"] and \
                         self.fromGateway.accountDict[self.CURRENCY_SYMBOLS_A[1]].available > usdt_amount and \
                         self.marketInfo[self.VT_SYMBOL_B]["bidVolume"] >= self.settingsDict["amount"] and self.marketInfo[self.VT_SYMBOL_A]["askVolume"] >= self.settingsDict["amount"]:
@@ -175,14 +179,13 @@ class BrickTradeEngine(object):
                                 self.fromGateway.sendOrder(orderReq)
                             self.onOrderFallback = on_order_fallback2
 
-                            def on_order_filled2(order):
+                            def on_order_filled2(order2):
                                 self.stage = 0
                             self.onOrderFilled = on_order_filled2
                             self.fromGateway.sendOrder(orderReq)
                     self.onOrderFilled = on_order_filled
                     self.jccGateway.sendOrder(orderReq)
-            gap = self.marketInfo[self.VT_SYMBOL_A]["bid"] / (
-                    self.marketInfo[self.VT_SYMBOL_B]["ask"] * self.settingsDict["exchangeRate"]["CNY_USD"]) - 1
+            gap = self.marketInfo[self.VT_SYMBOL_A]["bid"] / (self.marketInfo[self.VT_SYMBOL_B]["ask"] * self.exchange) - 1
             if gap > self.settingsDict["gapLimit"]:
                 print((self.CURRENCY_SYMBOLS_A[0] + ": " + self.fromGatewayName + " BID:%f\tJCC ASK:%f\t Gap: %f") % (self.marketInfo[self.VT_SYMBOL_A]["bid"], self.marketInfo[self.VT_SYMBOL_B]["ask"], gap))
                 cny_amount = self.settingsDict["amount"] * self.marketInfo[self.VT_SYMBOL_B]["ask"]
@@ -219,20 +222,18 @@ class BrickTradeEngine(object):
                                 self.fromGateway.sendOrder(orderReq)
                             self.onOrderFallback = on_order_fallback2
 
-                            def on_order_filled2(order):
+                            def on_order_filled2(order2):
                                 self.stage = 0
                             self.onOrderFilled = on_order_filled2
                             self.fromGateway.sendOrder(orderReq)
                     self.onOrderFilled = on_order_filled
                     self.jccGateway.sendOrder(orderReq)
             if self.stage == 0:
-                price_with_gap = (1 - self.settingsDict["gapLimit"]) * (self.marketInfo[self.VT_SYMBOL_B]["bid"]) * \
-                                 self.settingsDict["exchangeRate"]["CNY_USD"]
+                price_with_gap = (1 - self.settingsDict["gapLimit"]) * (self.marketInfo[self.VT_SYMBOL_B]["bid"]) * self.exchange
                 if price_with_gap > self.marketInfo[self.VT_SYMBOL_A]["bid"] + self.settingsDict['step'] and self.jccGateway.accountDict[self.CURRENCY_SYMBOLS_B[0]].available >= self.settingsDict["amount"] and \
                         self.fromGateway.accountDict[self.CURRENCY_SYMBOLS_A[1]].available >= self.settingsDict["amount"] * self.marketInfo[self.VT_SYMBOL_A]["bid"]:
-                    gap = (self.marketInfo[self.VT_SYMBOL_B]["bid"] * self.settingsDict["exchangeRate"]["CNY_USD"]) / \
-                          self.marketInfo[self.VT_SYMBOL_A]["bid"] - 1
-                    price = self.marketInfo[self.VT_SYMBOL_A]["bid"] + self.settingsDict['step']
+                    gap = (self.marketInfo[self.VT_SYMBOL_B]["bid"] * self.exchange) / self.marketInfo[self.VT_SYMBOL_A]["bid"] - 1
+                    price = round(self.marketInfo[self.VT_SYMBOL_A]["bid"] + self.settingsDict['step'], self.settingsDict['precision'])
                     if price > self.marketInfo[self.VT_SYMBOL_A]["ask"]:
                         price = self.marketInfo[self.VT_SYMBOL_A]["ask"]
                     print((self.CURRENCY_SYMBOLS_A[0] + ": JCC BID:%f\t" + self.fromGatewayName + " BID:%f\t Gap: %f") % (self.marketInfo[self.VT_SYMBOL_B]["bid"], price_with_gap, gap))
@@ -242,25 +243,25 @@ class BrickTradeEngine(object):
                     orderReq.volume = self.settingsDict["amount"]  # 交易数量
                     orderReq.symbol = self.SYMBOL_A  # 交易对
                     orderReq.direction = DIRECTION_BUY  # 限价买入
-                    self.writeLog(u'主动搬砖买一盘口挂单：%s, 单价：%.4f, 数量：%.2f' % (orderReq.symbol, self.marketInfo[self.VT_SYMBOL_A]["bid"] + self.settingsDict['step'], orderReq.volume))
+                    self.writeLog(u'主动搬砖买一盘口挂单：%s, 单价：%.6f, 数量：%.2f' % (orderReq.symbol, self.marketInfo[self.VT_SYMBOL_A]["bid"] + self.settingsDict['step'], orderReq.volume))
 
                     def on_order_fallback():
                         self.stage = 0
                     self.onOrderFallback = on_order_fallback
 
                     def on_order_filled(order):
-                        def trade_logic(order):
+                        def trade_logic(order2):
                             orderReq = VtOrderReq()
-                            orderReq.valueGet = round(order.tradedVolume * self.marketInfo[self.VT_SYMBOL_B]["bid"], 6)
+                            orderReq.valueGet = round(order2.tradedVolume * self.marketInfo[self.VT_SYMBOL_B]["bid"], 6)
                             orderReq.currencyGet = self.CURRENCY_SYMBOLS_B[1]
-                            orderReq.valuePay = order.tradedVolume
+                            orderReq.valuePay = order2.tradedVolume
                             orderReq.currencyPay = self.CURRENCY_SYMBOLS_B[0]
                             orderReq.direction = DIRECTION_SELL
                             orderReq.symbol = self.SYMBOL_B
-                            orderReq.volume = order.tradedVolume
+                            orderReq.volume = order2.tradedVolume
                             orderReq.price = self.marketInfo[self.VT_SYMBOL_B]["bid"]
                             self.writeLog(
-                                u'主动搬砖对冲挂单：%s, 单价：%.4f, 数量：%.2f' % (orderReq.symbol, self.marketInfo[self.VT_SYMBOL_B]["bid"], orderReq.volume))
+                                u'主动搬砖对冲挂单：%s, 单价：%.6f, 数量：%.2f' % (orderReq.symbol, self.marketInfo[self.VT_SYMBOL_B]["bid"], orderReq.volume))
                             self.stage = 4
 
                             def on_order_fallback2():
@@ -268,28 +269,29 @@ class BrickTradeEngine(object):
 
                             self.onOrderFallback = on_order_fallback2
 
-                            def on_order_filled2(order):
+                            def on_order_filled2(order3):
                                 self.stage = 0
 
                             self.onOrderFilled = on_order_filled2
                             self.jccGateway.sendOrder(orderReq)
 
-                        if order.status == STATUS_PARTTRADED:
+                        if order.status == STATUS_PARTTRADED and order.tradedVolume >= 1 and not self.brickMap[order.vtOrderID]['cancelling']:
+                            self.brickMap[order.vtOrderID]['cancelling'] = True
                             self.fromGateway.cancelOrder(order)
                         elif order.status == STATUS_ALLTRADED or order.status == STATUS_PARTTRADED_CANCEL:
-                            trade_logic(self.brickMap[order.vtOrderID]['order'])
+                            trade_logic(order)
+                        elif order.tradedVolume >= 1 and order.status == STATUS_CANCELLED:
+                            trade_logic(order)
                     self.onOrderFilled = on_order_filled
                     self.fromGateway.sendOrder(orderReq)
-                price_with_gap = (1 + self.settingsDict["gapLimit"]) * (self.marketInfo[self.VT_SYMBOL_B]["ask"]) * \
-                                 self.settingsDict["exchangeRate"]["CNY_USD"]
-                cny_amount = self.settingsDict["amount"] * (self.marketInfo[self.VT_SYMBOL_A]["ask"] - self.settingsDict['step']) / self.settingsDict["exchangeRate"]["CNY_USD"]
+                price_with_gap = (1 + self.settingsDict["gapLimit"]) * (self.marketInfo[self.VT_SYMBOL_B]["ask"]) * self.exchange
+                cny_amount = self.settingsDict["amount"] * (self.marketInfo[self.VT_SYMBOL_A]["ask"] - self.settingsDict['step']) / self.exchange
                 if price_with_gap < self.marketInfo[self.VT_SYMBOL_A]["ask"] - self.settingsDict['step'] and self.jccGateway.accountDict[self.CURRENCY_SYMBOLS_B[1]].available >= cny_amount and \
                         self.fromGateway.accountDict[self.CURRENCY_SYMBOLS_A[0]].available >= self.settingsDict["amount"]:
-                    price = self.marketInfo[self.VT_SYMBOL_A]["ask"] - self.settingsDict['step']
+                    price = round(self.marketInfo[self.VT_SYMBOL_A]["ask"] - self.settingsDict['step'], self.settingsDict['precision'])
                     if price < self.marketInfo[self.VT_SYMBOL_A]["bid"]:
                         price = self.marketInfo[self.VT_SYMBOL_A]["bid"]
-                    gap = self.marketInfo[self.VT_SYMBOL_A]["ask"] / (
-                                self.marketInfo[self.VT_SYMBOL_B]["ask"] * self.settingsDict["exchangeRate"]["CNY_USD"]) - 1
+                    gap = self.marketInfo[self.VT_SYMBOL_A]["ask"] / (self.marketInfo[self.VT_SYMBOL_B]["ask"] * self.exchange) - 1
                     print((self.CURRENCY_SYMBOLS_A[0] + ": JCC ASK:%f\t" + self.fromGatewayName + " ASK:%f\t Gap: %f") % (self.marketInfo[self.VT_SYMBOL_B]["ask"], price_with_gap, gap))
                     self.stage = 5
                     orderReq = VtOrderReq()
@@ -297,14 +299,14 @@ class BrickTradeEngine(object):
                     orderReq.volume = self.settingsDict["amount"]  # 交易数量
                     orderReq.symbol = self.SYMBOL_A  # 交易对
                     orderReq.direction = DIRECTION_SELL  # 限价卖出
-                    self.writeLog(u'主动搬砖买一盘口挂单：%s, 单价：%.4f, 数量：%.2f' % (orderReq.symbol, self.marketInfo[self.VT_SYMBOL_A]["ask"] - self.settingsDict['step'], orderReq.volume))
+                    self.writeLog(u'主动搬砖买一盘口挂单：%s, 单价：%.6f, 数量：%.2f' % (orderReq.symbol, self.marketInfo[self.VT_SYMBOL_A]["ask"] - self.settingsDict['step'], orderReq.volume))
 
                     def on_order_fallback():
                         self.stage = 0
                     self.onOrderFallback = on_order_fallback
 
                     def on_order_filled(order):
-                        def trade_logic(order):
+                        def trade_logic(order2):
                             orderReq = VtOrderReq()
                             orderReq.valueGet = self.settingsDict["amount"]
                             orderReq.currencyGet = self.CURRENCY_SYMBOLS_B[0]
@@ -312,92 +314,95 @@ class BrickTradeEngine(object):
                             orderReq.currencyPay = self.CURRENCY_SYMBOLS_B[1]
                             orderReq.direction = DIRECTION_BUY
                             orderReq.symbol = self.SYMBOL_B
-                            orderReq.volume = order.tradedVolume
+                            orderReq.volume = order2.tradedVolume
                             orderReq.price = self.marketInfo[self.VT_SYMBOL_B]["ask"]
-                            self.writeLog(u'主动搬砖对冲挂单：%s, 单价：%.4f, 数量：%.2f' % (orderReq.symbol, self.marketInfo[self.VT_SYMBOL_B]["ask"], orderReq.volume))
+                            self.writeLog(u'主动搬砖对冲挂单：%s, 单价：%.6f, 数量：%.2f' % (orderReq.symbol, self.marketInfo[self.VT_SYMBOL_B]["ask"], orderReq.volume))
                             self.stage = 6
 
                             def on_order_fallback2():
                                 self.jccGateway.sendOrder(orderReq)
                             self.onOrderFallback = on_order_fallback2
 
-                            def on_order_filled2(order):
+                            def on_order_filled2(order3):
                                 self.stage = 0
                             self.onOrderFilled = on_order_filled2
                             self.jccGateway.sendOrder(orderReq)
 
-                        if order.status == STATUS_PARTTRADED:
+                        if order.status == STATUS_PARTTRADED and order.tradedVolume >= 1 and not self.brickMap[order.vtOrderID]['cancelling']:
+                            self.brickMap[order.vtOrderID]['cancelling'] = True
                             self.fromGateway.cancelOrder(order)
                         elif order.status == STATUS_ALLTRADED or order.status == STATUS_PARTTRADED_CANCEL:
-                            trade_logic(self.brickMap[order.vtOrderID]['order'])
+                            trade_logic(order)
+                        elif order.tradedVolume >= 1 and order.status == STATUS_CANCELLED:
+                            trade_logic(order)
                     self.onOrderFilled = on_order_filled
                     self.fromGateway.sendOrder(orderReq)
             if self.stage == 3:
-                price_with_gap = (1 - self.settingsDict["gapLimit"]) * (self.marketInfo[self.VT_SYMBOL_B]["bid"]) * self.settingsDict["exchangeRate"]["CNY_USD"]
+                price_with_gap = (1 - self.settingsDict["gapLimit"]) * (self.marketInfo[self.VT_SYMBOL_B]["bid"]) * self.exchange
                 for vtOrderId in self.brickMap:
                     if vtOrderId.startswith(self.fromGatewayName + ".") and self.brickMap[vtOrderId]['status'] == 'ordered':
                         price = self.brickMap[vtOrderId]['order'].price
                         if price_with_gap < price:
                             self.brickMap[vtOrderId]['status'] = 'canceled'
-                            self.writeLog(u'主动搬砖盘口撤单：%s, 单价：%.4f' % (self.brickMap[vtOrderId]['order'].symbol, price))
+                            self.writeLog(u'主动搬砖盘口撤单：%s, 单价：%.6f' % (self.brickMap[vtOrderId]['order'].symbol, price))
 
                             def order_cancelled(order):
                                 if order.orderID == self.brickMap[vtOrderId]['order'].orderID:
                                     self.stage = 0
-                            self.onOrderCancelled =  order_cancelled
+                            self.onOrderCancelled = order_cancelled
                             self.fromGateway.cancelOrder(self.brickMap[vtOrderId]['order'])
-                        if price < round(self.marketInfo[self.VT_SYMBOL_A]["bid"], 4) and price_with_gap > round(price + self.settingsDict['step'], 4):
+                        if price < round(self.marketInfo[self.VT_SYMBOL_A]["bid"], self.settingsDict['precision']) and price_with_gap > round(price + self.settingsDict['step'], self.settingsDict['precision']):
                             self.brickMap[vtOrderId]['status'] = 'canceled'
-                            self.writeLog(u'主动搬砖盘口撤单：%s, 单价：%.4f' % (self.brickMap[vtOrderId]['order'].symbol, price))
+                            self.writeLog(u'主动搬砖盘口撤单：%s, 单价：%.6f' % (self.brickMap[vtOrderId]['order'].symbol, price))
 
                             def order_cancelled(order):
                                 if order.orderID == self.brickMap[vtOrderId]['order'].orderID:
                                     self.stage = 0
-                            self.onOrderCancelled =  order_cancelled
+                            self.onOrderCancelled = order_cancelled
                             self.fromGateway.cancelOrder(self.brickMap[vtOrderId]['order'])
-                        if price - round(self.marketInfo[self.VT_SYMBOL_A]["bid2"], 4) > self.settingsDict['step'] and self.marketInfo[self.VT_SYMBOL_A]["bidVolume"] == self.brickMap[vtOrderId]['order'].volume:
+                        if round(price - self.marketInfo[self.VT_SYMBOL_A]["bid2"], self.settingsDict['precision']) > self.settingsDict['step'] and self.marketInfo[self.VT_SYMBOL_A]["bidVolume"] == self.brickMap[vtOrderId]['order'].volume:
                             self.brickMap[vtOrderId]['status'] = 'canceled'
-                            self.writeLog(u'主动搬砖盘口撤单：%s, 单价：%.4f' % (self.brickMap[vtOrderId]['order'].symbol, price))
+                            self.writeLog(u'主动搬砖盘口撤单：%s, 单价：%.6f' % (self.brickMap[vtOrderId]['order'].symbol, price))
 
                             def order_cancelled(order):
                                 if order.orderID == self.brickMap[vtOrderId]['order'].orderID:
-                                    if price - round(self.marketInfo[self.VT_SYMBOL_A]["bid"], 4) < self.settingsDict['step']:
+                                    if price - round(self.marketInfo[self.VT_SYMBOL_A]["bid"], self.settingsDict['precision']) < self.settingsDict['step']:
                                         self.marketInfo[self.VT_SYMBOL_A]["bid"] = self.marketInfo[self.VT_SYMBOL_A]["bid2"]
                                         self.marketInfo[self.VT_SYMBOL_A]["bidVolume"] = self.marketInfo[self.VT_SYMBOL_A]["bidVolume2"]
                                     self.stage = 0
-                            self.onOrderCancelled =  order_cancelled
+                            self.onOrderCancelled = order_cancelled
                             self.fromGateway.cancelOrder(self.brickMap[vtOrderId]['order'])
 
             if self.stage == 5:
-                price_with_gap = (1 + self.settingsDict["gapLimit"]) * (self.marketInfo[self.VT_SYMBOL_B]["ask"]) * self.settingsDict["exchangeRate"]["CNY_USD"]
+                price_with_gap = (1 + self.settingsDict["gapLimit"]) * (self.marketInfo[self.VT_SYMBOL_B]["ask"]) * self.exchange
                 for vtOrderId in self.brickMap:
                     if vtOrderId.startswith(self.fromGatewayName + ".") and self.brickMap[vtOrderId]['status'] == 'ordered':
                         price = self.brickMap[vtOrderId]['order'].price
                         if price_with_gap > price:
                             self.brickMap[vtOrderId]['status'] = 'canceled'
-                            self.writeLog(u'主动搬砖盘口撤单：%s, 单价：%.4f' % (self.brickMap[vtOrderId]['order'].symbol, price))
+                            self.writeLog(u'主动搬砖盘口撤单：%s, 单价：%.6f' % (self.brickMap[vtOrderId]['order'].symbol, price))
 
                             def order_cancelled(order):
                                 if order.orderID == self.brickMap[vtOrderId]['order'].orderID:
                                     self.stage = 0
                             self.onOrderCancelled = order_cancelled
                             self.fromGateway.cancelOrder(self.brickMap[vtOrderId]['order'])
-                        if price > round(self.marketInfo[self.VT_SYMBOL_A]["ask"], 4) and price_with_gap > round(price - self.settingsDict['step'], 4):
+                        if price > round(self.marketInfo[self.VT_SYMBOL_A]["ask"], self.settingsDict['precision']) and price_with_gap > round(price - self.settingsDict['step'], self.settingsDict['precision']):
                             self.brickMap[vtOrderId]['status'] = 'canceled'
-                            self.writeLog(u'主动搬砖盘口撤单：%s, 单价：%.4f' % (self.brickMap[vtOrderId]['order'].symbol, price))
+                            self.writeLog(u'主动搬砖盘口撤单：%s, 单价：%.6f' % (self.brickMap[vtOrderId]['order'].symbol, price))
 
                             def order_cancelled(order):
                                 if order.orderID == self.brickMap[vtOrderId]['order'].orderID:
                                     self.stage = 0
                             self.onOrderCancelled = order_cancelled
                             self.fromGateway.cancelOrder(self.brickMap[vtOrderId]['order'])
-                        if price - round(self.marketInfo[self.VT_SYMBOL_A]["ask2"], 4) > self.settingsDict['step'] and self.marketInfo[self.VT_SYMBOL_A]["askVolume"] == self.brickMap[vtOrderId]['order'].volume:
+                        if round(price - self.marketInfo[self.VT_SYMBOL_A]["ask2"], self.settingsDict['precision']) > self.settingsDict['step'] and self.marketInfo[self.VT_SYMBOL_A]["askVolume"] == self.brickMap[vtOrderId]['order'].volume:
                             self.brickMap[vtOrderId]['status'] = 'canceled'
-                            self.writeLog(u'主动搬砖盘口撤单：%s, 单价：%.4f' % (self.brickMap[vtOrderId]['order'].symbol, price))
+                            self.writeLog(u'主动搬砖盘口撤单：%s, 单价：%.6f' % (self.brickMap[vtOrderId]['order'].symbol, price))
 
                             def order_cancelled(order):
                                 if order.orderID == self.brickMap[vtOrderId]['order'].orderID:
-                                    if price - round(self.marketInfo[self.VT_SYMBOL_A]["ask"], 4) < self.settingsDict['step']:
+                                    if price - round(self.marketInfo[self.VT_SYMBOL_A]["ask"], self.settingsDict['precision']) < self.settingsDict['step']:
                                         self.marketInfo[self.VT_SYMBOL_A]["ask"] = self.marketInfo[self.VT_SYMBOL_A]["ask2"]
                                         self.marketInfo[self.VT_SYMBOL_A]["askVolume"] = self.marketInfo[self.VT_SYMBOL_A]["askVolume2"]
                                     self.stage = 0
@@ -428,8 +433,11 @@ class BrickTradeEngine(object):
         if order.status == STATUS_CANCELLED:
             if order.vtOrderID in self.brickMap.keys() and self.brickMap[order.vtOrderID]['watchStatus']:
                 self.brickMap[order.vtOrderID]['watchStatus'] = False
-            if self.onOrderCancelled is not None:
-                self.onOrderCancelled(order)
+                self.brickMap[order.vtOrderID]['order'] = order
+                if self.brickMap[order.vtOrderID]['cancelling'] and self.onOrderFilled is not None:
+                    self.onOrderFilled(order)
+                elif self.onOrderCancelled is not None:
+                    self.onOrderCancelled(order)
         if order.status == STATUS_ORDERED:
             self.onOrderFallback = None
             if order.vtSymbol == self.VT_SYMBOL_A:
@@ -437,6 +445,7 @@ class BrickTradeEngine(object):
                 self.brickMap[order.vtOrderID] = {
                     'order': order,
                     'status': 'ordered',
+                    'cancelling': False,
                     'watchThread': watchThread,
                     'watchStatus': True
                 }
@@ -445,6 +454,7 @@ class BrickTradeEngine(object):
             elif order.vtSymbol == self.VT_SYMBOL_B:
                 self.brickMap[order.vtOrderID] = {
                     'order': order,
+                    'cancelling': False,
                     'status': 'ordered',
                 }
                 pass
@@ -571,6 +581,7 @@ class BrickTradeEngine(object):
 
         if self.active:
             self.writeLog(u'搬砖功能启动')
+            self.loadSetting()
             self.reqThread = Thread(target=self.startTrade)
             self.reqThread.start()
             #self.startTrade()
@@ -582,5 +593,5 @@ class BrickTradeEngine(object):
     #----------------------------------------------------------------------
     def stop(self):
         """停止"""
-        self.saveSetting()
+        pass
 
