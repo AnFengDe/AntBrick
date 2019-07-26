@@ -22,8 +22,6 @@ REST_ENDPOINT = 'https://www.binance.com'
 DATASTREAM_ENDPOINT = 'wss://stream.binance.com:9443/stream?streams='
 USERSTREAM_ENDPOINT = 'wss://stream.binance.com:9443/ws/'
 
-
-
 ########################################################################
 class BinanceApi(object):
     """"""
@@ -518,7 +516,7 @@ class BinanceApi(object):
                 stream = self.dataStreamWs.recv()
                 data = json.loads(stream)
                 self.onMarketData(data)
-            except:
+            except Exception as e:
                 self.onDataStreamError('Data stream connection lost')
                 result = self.connectDataStream()
                 if not result:

@@ -61,7 +61,7 @@ class BinanceGateway(VtGateway):
 
         self.qryEnabled = False         # 是否要启动循环查询
 
-        self.fileName = self.gatewayName + '_connect.json'
+        self.fileName = 'GatewayConfig/' + self.gatewayName + '_connect.json'
         self.filePath = getJsonPath(self.fileName, __file__)
 
     #----------------------------------------------------------------------
@@ -191,7 +191,7 @@ class GatewayApi(BinanceApi):
         for symbol in symbols:
             symbol = symbol.lower()
             l.append(symbol+'@ticker')
-            l.append(symbol+'@depth5')
+            l.append(symbol+'@depth20')
         self.initDataStream(l)
         self.writeLog(u'行情推送订阅成功')
         
@@ -415,42 +415,19 @@ class GatewayApi(BinanceApi):
             tick.lastPrice = float(data['c'])
             tick.date, tick.time = self.generateDateTime(data['E'])
         else:
-            tick.askPrice1, tick.askVolume1, buf = data['asks'][0]
-            tick.askPrice2, tick.askVolume2, buf = data['asks'][1]
-            tick.askPrice3, tick.askVolume3, buf = data['asks'][2]
-            tick.askPrice4, tick.askVolume4, buf = data['asks'][3]
-            tick.askPrice5, tick.askVolume5, buf = data['asks'][4]
-            
-            tick.bidPrice1, tick.bidVolume1, buf = data['bids'][0]
-            tick.bidPrice2, tick.bidVolume2, buf = data['bids'][1]
-            tick.bidPrice3, tick.bidVolume3, buf = data['bids'][2]
-            tick.bidPrice4, tick.bidVolume4, buf = data['bids'][3]
-            tick.bidPrice5, tick.bidVolume5, buf = data['bids'][4]    
-            
-            tick.askPrice1 = float(tick.askPrice1)
-            tick.askPrice2 = float(tick.askPrice2)
-            tick.askPrice3 = float(tick.askPrice3)
-            tick.askPrice4 = float(tick.askPrice4)
-            tick.askPrice5 = float(tick.askPrice5)
-            
-            tick.bidPrice1 = float(tick.bidPrice1)
-            tick.bidPrice2 = float(tick.bidPrice2)
-            tick.bidPrice3 = float(tick.bidPrice3)
-            tick.bidPrice4 = float(tick.bidPrice4)
-            tick.bidPrice5 = float(tick.bidPrice5)          
-            
-            tick.askVolume1 = float(tick.askVolume1)
-            tick.askVolume2 = float(tick.askVolume2)
-            tick.askVolume3 = float(tick.askVolume3)
-            tick.askVolume4 = float(tick.askVolume4)
-            tick.askVolume5 = float(tick.askVolume5)
-            
-            tick.bidVolume1 = float(tick.bidVolume1)
-            tick.bidVolume2 = float(tick.bidVolume2)
-            tick.bidVolume3 = float(tick.bidVolume3)
-            tick.bidVolume4 = float(tick.bidVolume4)
-            tick.bidVolume5 = float(tick.bidVolume5) 
-        
+            for index in range(20):
+                para = "bidPrice" + str(index + 1)
+                setattr(tick, para, data['bids'][index][0])
+
+                para = "askPrice" + str(index + 1)
+                setattr(tick, para, data['asks'][index][0])
+
+                para = "bidVolume" + str(index + 1)
+                setattr(tick, para, data['bids'][index][1])
+
+                para = "askVolume" + str(index + 1)
+                setattr(tick, para, data['asks'][index][1])
+
         self.gateway.onTick(copy(tick))
     
     #----------------------------------------------------------------------

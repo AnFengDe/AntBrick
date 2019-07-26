@@ -97,7 +97,7 @@ class HuobiGateway(VtGateway):
         self.localOrderDict = {}
         self.orderLocalDict = {}
 
-        self.restApi = HuobiRestApi(self)                   
+        self.restApi = HuobiRestApi(self)
         #self.tradeWsApi = HuobiTradeWebsocketApi(self)
         self.marketWsApi = HuobiMarketWebsocketApi(self)    
 
@@ -159,7 +159,7 @@ class HuobiGateway(VtGateway):
     def close(self):
         """关闭"""
         self.restApi.stop()
-        self.tradeWsApi.stop()
+        # self.tradeWsApi.stop()
         self.marketWsApi.stop()
 
     #----------------------------------------------------------------------
@@ -377,7 +377,7 @@ class HuobiRestApi(RestClient):
         for d in data['data']:
             if str(d['type']) == 'spot':
                 self.accountid = str(d['id'])
-                self.gateway.writeLog(u'账户代码%s查询成功' %self.accountid)        
+                #self.gateway.writeLog(u'账户代码%s查询成功' %self.accountid)
         
         self.queryAccountBalance()
     
@@ -390,7 +390,7 @@ class HuobiRestApi(RestClient):
             self.gateway.writeLog(msg)
             return
         
-        self.gateway.writeLog(u'资金信息查询成功')
+        #self.gateway.writeLog(u'资金信息查询成功')
         
         for d in data['data']['list']:
             currency = d['currency']
@@ -426,7 +426,7 @@ class HuobiRestApi(RestClient):
             return
         
         symbol = request.params['symbol']
-        self.gateway.writeLog(u'%s委托信息查询成功' %symbol)
+        #self.gateway.writeLog(u'%s委托信息查询成功' %symbol)
         
         data['data'].reverse()
         for d in data['data']:
@@ -810,7 +810,7 @@ class HuobiMarketWebsocketApi(HuobiWebsocketApiBase):
             # 订阅深度和成交
             self.reqID += 1
             req = {
-                "sub": "market.%s.depth.step0" %symbol,
+                "sub": "market.%s.depth.step1" %symbol,
                 "id": str(self.reqID)     
             }
             self.sendPacket(req)

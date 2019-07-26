@@ -11,10 +11,12 @@ import urllib3
 import hmac
 import sys
 import base64
+import random
 import zlib
 from datetime import timedelta, datetime
 from copy import copy
 
+import threading
 from vnpy.api.rest import RestClient, Request
 from vnpy.trader.vtGateway import *
 from vnpy.trader.vtFunction import getJsonPath
@@ -53,6 +55,7 @@ orderStatusMapReverse = {v: k for k, v in orderStatusMap.items()}
 directionMapReverse = {v: k for k, v in directionMap.items()}
 orderTypeMapReverse = {v: k for k, v in orderTypeMap.items()}
 
+balanceOrderLogic = False
 
 class JccServerInfo(object):
     """JCC服务器信息"""
@@ -67,14 +70,14 @@ class JccServerInfo(object):
 
     def getServerInfo(self):
         http = urllib3.PoolManager()
+        urllib3.disable_warnings()
         r = http.request('GET', 'https://jccdex.cn/static/config/jc_config.json')
         data = r.data.decode()
         result = json.loads(data.replace("\n", ""))
         self.exHosts = result['exHosts']
         self.infoHosts = result['infoHosts']
-
-        self.exchangeApiHost = self.exHosts[-1]
-        self.infoApiHost = self.infoHosts[-1]
+        self.exchangeApiHost = random.choice(self.exHosts)
+        self.infoApiHost = random.choice(self.infoHosts)
         print("self.exchangeApiHost is %s"%(self.exchangeApiHost))
         print("self.wsApiHost is %s"%(self.infoApiHost))
 
@@ -212,6 +215,7 @@ class JccGateway(VtGateway):
         self.qryEnabled = qryEnabled
 
     def processQueueOrder(self, data, historyFlag):
+        push_order = {}
         for d in data['data']['transactions']:
             if d.get('type') == 'offernew':
                 orderID = d['seq']
@@ -219,23 +223,72 @@ class JccGateway(VtGateway):
                 if strOrderID in self.orderDict.keys():
                     order = self.orderDict[strOrderID]
                     for effects in d['effects']:
-                        if effects['effect'] == 'offer_funded' or effects['effect'] == 'offer_bought':
-                            order.status = STATUS_ALLTRADED
-                            self.onOrder(order)  # 普通推送更新委托列表
+                        if (effects['effect'] == 'offer_funded' or effects['effect'] == 'offer_bought'):
+                            if push_order.get(strOrderID) is not None:
+                                order = push_order.get(strOrderID)
+                                if order.status == STATUS_CANCELLED:
+                                    order.valueGot = 0
+                                    order.valuePaid = 0
+                                    order.tradedVolume = 0
+                            else:
+                                order.valueGot = 0
+                                order.valuePaid = 0
+                                order.tradedVolume = 0
+                            order.valueGot += float(effects['got']['value'])
+                            order.valuePaid += float(effects['paid']['value'])
+                            order.tradedVolume += float(effects['paid']['value'] if effects['got']['currency'] == 'JUSDT' or effects['got']['currency'] == 'CNY' else effects['got']['value'])
+                            base_volume = float(order.valuePaid if effects['got']['currency'] == 'JUSDT' or effects['got']['currency'] == 'CNY' else order.valueGot)
+                            if base_volume / order.volume > 0.99:
+                                order.status = STATUS_ALLTRADED
+                                order.tradedVolume = order.volume
+                                if not balanceOrderLogic:
+                                    self.onOrder(order)  # 普通推送更新委托列表
+                            elif order.status != STATUS_ALLTRADED:
+                                if order.status != STATUS_CANCELLED:
+                                    order.status = STATUS_PARTTRADED
+                                else:
+                                    order.status = STATUS_PARTTRADED_CANCEL
+                                push_order[strOrderID] = order
             elif d.get('type') == 'offereffect':
                 for effects in d['effects']:
                     orderID = effects['seq']
                     strOrderID = str(orderID)
                     if strOrderID in self.orderDict.keys():
                         order = self.orderDict[strOrderID]
-                        if effects['effect'] == 'offer_funded' or effects['effect'] == 'offer_bought' :
+                        if effects['effect'] == 'offer_funded' or effects['effect'] == 'offer_bought':
                             order.status = STATUS_ALLTRADED
-                            self.onOrder(order)  # 普通推送更新委托列表
-                        elif effects['effect'] == 'offer_partially_funded':
-                            order.status = STATUS_PARTTRADED
-                            order.valueGot = effects['got']['value']
-                            order.valuePaid = effects['paid']['value']
-                            self.onOrder(order)  # 普通推送更新委托列表
+                            order.tradedVolume = order.volume
+                            if not balanceOrderLogic:
+                                self.onOrder(order)  # 普通推送更新委托列表
+                        elif effects['effect'] == 'offer_partially_funded' and order.status != STATUS_ALLTRADED:
+                            if push_order.get(strOrderID) is not None:
+                                order = push_order.get(strOrderID)
+                                order.valueGot += float(effects['got']['value'])
+                                order.valuePaid += float(effects['paid']['value'])
+                                order.tradedVolume += float(effects['paid']['value'] if effects['got']['currency'] == 'JUSDT' or effects['got']['currency'] == 'CNY' else effects['got']['value'])
+                            else:
+                                if order.status != STATUS_CANCELLED:
+                                    order.status = STATUS_PARTTRADED
+                                else:
+                                    order.status = STATUS_PARTTRADED_CANCEL
+                                order.valueGot = float(effects['got']['value'])
+                                order.valuePaid = float(effects['paid']['value'])
+                                push_order[strOrderID] = order
+            elif d.get('type') == 'offercancel':
+                for effects in d['effects']:
+                    orderID = effects['seq']
+                    strOrderID = str(orderID)
+                    if strOrderID in self.orderDict.keys():
+                        order = self.orderDict[strOrderID]
+                        if effects['effect'] == 'offer_cancelled' and order.status != STATUS_ALLTRADED and order.status != STATUS_PARTTRADED_CANCEL and order.status != STATUS_CANCELLED:
+                            order.status = STATUS_CANCELLED
+                            order.valueGot = 0
+                            order.valuePaid = 0
+                            order.tradedVolume = 0
+                            push_order[strOrderID] = order
+        if not balanceOrderLogic:
+            for orderId in push_order.keys():
+                self.onOrder(push_order[orderId])
 
     def writeLog(self, msg):
         """"""
@@ -273,6 +326,9 @@ class JccExchangeApi(RestClient):
         self.orderBufDict = {}
         self.tickDict = {}
         self.exchangeHost = ''
+        self.lock = threading.Lock()
+        self.updateGoal = set()
+        self.updateFinished = set()
 
         #self.queryAccountThread = None
 
@@ -393,8 +449,10 @@ class JccExchangeApi(RestClient):
                             onFailed=self.onSendOrderFailed,
                             data=data,
                             extra=localID)
+            return vtOrderID
         except Exception as e:
             print(e)
+            return ""
 
     # ----------------------------------------------------------------------
     def cancelOrder(self, seq):
@@ -485,7 +543,7 @@ class JccExchangeApi(RestClient):
 
             for account in self.accountDict.values():
                 self.gateway.onAccount(account)
-
+            self.updateAccount()
             #self.queryOrder()
             #self.queryHistoryOrder()
             #self.gateway.writeLog('资金信息查询成功')
@@ -522,12 +580,30 @@ class JccExchangeApi(RestClient):
     def onQueryHistoryOrder(self, data, request):
         if data['code'] == '0':
             self.gateway.processQueueOrder(data, historyFlag=1)
+            self.updateOrders()
         else:
             try:
                 msg = '错误代码：%s, 错误信息：%s' % (data['code'], errMsgMap[int(data['code'])])
             except Exception as e:
                 msg = '错误代码：%s, 错误信息：%s' % (data['code'], '错误信息未知')
             self.gateway.writeLog(msg)
+
+
+    def updateAccount(self):
+        if balanceOrderLogic:
+            self.balanceOrderLogic()
+
+    def updateOrders(self):
+        if balanceOrderLogic:
+            self.balanceOrderLogic()
+
+    def balanceOrderLogic(self):
+        self.lock.acquire()
+        if len(self.updateGoal.difference(self.updateFinished)) > 0:
+            self.lock.release()
+            return
+        self.updateFinished.clear()
+        self.lock.release()
 
     # ----------------------------------------------------------------------
     def onSendOrderFailed(self, data, request):
@@ -566,7 +642,8 @@ class JccExchangeApi(RestClient):
         else:
             order.status = STATUS_ORDERED  # 已报
             self.orderDict[localID] = order
-            self.gateway.onOrder(order)
+            if not balanceOrderLogic:
+                self.gateway.onOrder(order)
 
             #req = self.cancelReqDict.get(localID, None)
             #if req:
@@ -584,7 +661,8 @@ class JccExchangeApi(RestClient):
             order = request.extra
             if order is not None:
                 order.status = STATUS_CANCELLED # 订单状态
-                self.gateway.onOrder(order)
+                if not balanceOrderLogic:
+                    self.gateway.onOrder(order)
 
     def onCancelAllOrders(self, data, request):
         if data['result'] != 1:
@@ -685,6 +763,8 @@ class JccInfoApi(RestClient):
             self.dealDict[symbol] = tick
 
     def subscribe(self):
+        if self._queue.qsize() > len(self.symbols):
+            return
         for symbol in self.symbols:
             # 获取市场深度
             path = "/info/depth/" + symbol + "/normal"  # normal-只获取最新10条记录 more-获取最新50条记录
@@ -793,9 +873,9 @@ class JccInfoApi(RestClient):
                 except Exception as e:
                     print(e)
 
-                #tick.datetime = datetime.fromtimestamp(d['timestamp'])
-                #tick.date = tick.datetime.strftime('%Y%m%d')
-                #tick.time = tick.datetime.strftime('%H:%M:%S')
+                tick.datetime = datetime.now()
+                tick.date = tick.datetime.strftime('%Y%m%d')
+                tick.time = tick.datetime.strftime('%H:%M:%S')
 
                 self.gateway.onTick(copy(tick))
             except Exception as e:

@@ -15,7 +15,7 @@ from vnpy.trader.vtEngine import MainEngine
 from vnpy.trader.uiQt import createQApp
 
 # 加载底层接口
-from vnpy.trader.gateway import (jccGateway, coinbeneGateway, coinwGateway)
+from vnpy.trader.gateway import (jccGateway, coinbeneGateway, coinwGateway, binanceGateway, huobiGateway)
                                  #idcmGateway)
                                 #(huobiGateway, okexGateway, okexfGateway,
                                  #binanceGateway, bitfinexGateway,
@@ -27,8 +27,9 @@ from vnpy.trader.gateway import (jccGateway, coinbeneGateway, coinwGateway)
 # 加载上层应用
 #from vnpy.trader.app import (algoTrading)
 #from vnpy.trader.app.alGo import (followBtcSelfTrade)  # 跟随BTC刷单交易
-from vnpy.trader.app import (brickTrade)  # 被动搬砖策略
+from vnpy.trader.app import (brickTradePassive)  # 被动搬砖策略
 from vnpy.trader.app import (brickTradePositive)  # 主动搬砖策略
+from vnpy.trader.app import (brickTradeDepthCopy)  # 深度复制搬砖策略
 
 from vnpy.trader.app import (riskManager)  # 风控模块
 #from vnpy.trader.app import (dataRecorder)
@@ -61,9 +62,9 @@ def main():
     #me.addGateway(bigoneGateway)
     #me.addGateway(fcoinGateway)
     #me.addGateway(bitmexGateway)
-    #me.addGateway(huobiGateway)
+    me.addGateway(huobiGateway)
     #me.addGateway(okexGateway)
-    #me.addGateway(binanceGateway)
+    me.addGateway(binanceGateway)
     #me.addGateway(bitfinexGateway)
     me.addGateway(coinbeneGateway)
     me.addGateway(coinwGateway)
@@ -73,9 +74,10 @@ def main():
     # 添加上层应用
 #    me.addApp(algoTrading)
     #me.addApp(followBtcSelfTrade)
-    me.addApp(brickTrade)
+    me.addApp(brickTradePassive)
     me.addApp(brickTradePositive)
-    me.addApp(riskManager)
+    me.addApp(brickTradeDepthCopy)
+#    me.addApp(riskManager)
 #    me.addApp(dataRecorder)
 #    me.addApp(optionMaster)
     #me.addApp(rpcService)

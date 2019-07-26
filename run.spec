@@ -4,17 +4,18 @@ block_cipher = None
 
 
 a = Analysis(['run.py'],
-             pathex=['D:\\jcc\\AntBrick'],
+             pathex=['E:\\workspace\\gaoshan\\vnpy\\AntBrick'],
              binaries=[],
-            datas=[('D:\\jcc\\AntBrick\\vnpy\\trader\\app\\brickTrade\\*.json','vnpy\\trader\\app\\brickTrade'),
-                ('D:\\jcc\\AntBrick\\vnpy\\trader\*.json','vnpy\\trader'),
-                    ('D:\\jcc\\AntBrick\\vnpy\\trader\\app\\riskManager\\RM_setting.json','vnpy\\trader\\app\\riskManager'),
-                     ('D:\\jcc\\AntBrick\\vnpy\\trader\\app\\brickTradePositive\\*.json','vnpy\\trader\\app\\brickTradePositive'),
-                     ('D:\\jcc\\AntBrick\\GatewayConfig\\*.json','GatewayConfig'),
-                     ('D:\\jcc\\AntBrick\\jingtum_python_lib\\*.json','jingtum_python_lib'),
-                 ('D:\\jcc\\AntBrick\\vnpy\\trader\\app\\riskManager\\*.ico','vnpy\\trader\\app\\riskManager'),
-                    ('D:\\jcc\\AntBrick\\vnpy\\trader\\ico\\*.ico','vnpy\\trader\\ico'),
-                    ('D:\\jcc\\AntBrick\\vnpy\\trader\\app\\algoTrading\\*.ico','vnpy\\trader\\app\\algoTrading')
+            datas=[('E:\\workspace\\gaoshan\\vnpy\\AntBrick\\vnpy\\trader\\app\\brickTradePassive\\*.json','vnpy\\trader\\app\\brickTradePassive'),
+                ('E:\\workspace\\gaoshan\\vnpy\\AntBrick\\vnpy\\trader\*.json','vnpy\\trader'),
+                    ('E:\\workspace\\gaoshan\\vnpy\\AntBrick\\vnpy\\trader\\app\\riskManager\\RM_setting.json','vnpy\\trader\\app\\riskManager'),
+                     ('E:\\workspace\\gaoshan\\vnpy\\AntBrick\\vnpy\\trader\\app\\brickTradePositive\\*.json','vnpy\\trader\\app\\brickTradePositive'),
+                     ('E:\\workspace\\gaoshan\\vnpy\\AntBrick\\vnpy\\trader\\app\\brickTradeDepthCopy\\*.json','vnpy\\trader\\app\\brickTradeDepthCopy'),
+                     ('E:\\workspace\\gaoshan\\vnpy\\AntBrick\\GatewayConfig\\*.json','GatewayConfig'),
+                     ('E:\\workspace\\gaoshan\\vnpy\\AntBrick\\jingtum_python_lib\\*.json','jingtum_python_lib'),
+                 ('E:\\workspace\\gaoshan\\vnpy\\AntBrick\\vnpy\\trader\\app\\riskManager\\*.ico','vnpy\\trader\\app\\riskManager'),
+                    ('E:\\workspace\\gaoshan\\vnpy\\AntBrick\\vnpy\\trader\\ico\\*.ico','vnpy\\trader\\ico'),
+                    ('E:\\workspace\\gaoshan\\vnpy\\AntBrick\\vnpy\\trader\\app\\algoTrading\\*.ico','vnpy\\trader\\app\\algoTrading')
                 ],
              hiddenimports=[],
              hookspath=[],

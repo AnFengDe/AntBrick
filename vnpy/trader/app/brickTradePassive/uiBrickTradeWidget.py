@@ -53,19 +53,34 @@ class BrickTradeManager(QtWidgets.QWidget):
             print(e)
 
         # 报价相关设置
+        self.lineAggressive = QtWidgets.QCheckBox()
         self.lineGapLimit = QtWidgets.QLineEdit()
-        self.lineUsdtCnyRate = QtWidgets.QLineEdit()
         self.lineAmount = QtWidgets.QLineEdit()
+        self.lineStep = QtWidgets.QLineEdit()
+        self.linePrecision = QtWidgets.QLineEdit()
+        self.textProfit = QtWidgets.QLineEdit()
+        self.textProfit.setEnabled(False)
+        self.brickEngine.registProfitCallback(self.profitCallback)
 
         Label = QtWidgets.QLabel
 
         gridBtcCheck = QtWidgets.QGridLayout()
-        gridBtcCheck.addWidget(Label(u'可接受价差(%)'), 0, 0)
-        gridBtcCheck.addWidget(self.lineGapLimit, 0, 1)
-        gridBtcCheck.addWidget(Label(u'CNY/USDT汇率'), 1, 0)
-        gridBtcCheck.addWidget(self.lineUsdtCnyRate, 1, 1)
-        gridBtcCheck.addWidget(Label(u'单笔挂单金额'), 2, 0)
-        gridBtcCheck.addWidget(self.lineAmount, 2, 1)
+        index = 0
+        gridBtcCheck.addWidget(Label(u'可接受价差(%)'), index, 0)
+        gridBtcCheck.addWidget(self.lineGapLimit, index, 1)
+        index += 1
+        gridBtcCheck.addWidget(Label(u'单笔挂单金额'), index, 0)
+        gridBtcCheck.addWidget(self.lineAmount, index, 1)
+        index += 1
+        gridBtcCheck.addWidget(Label(u'价差步进量'), index, 0)
+        gridBtcCheck.addWidget(self.lineStep, index, 1)
+        index += 1
+        gridBtcCheck.addWidget(Label(u'价格保留精度'), index, 0)
+        gridBtcCheck.addWidget(self.linePrecision, index, 1)
+        index += 1
+        gridBtcCheck.addWidget(Label(u'持仓收益'), index, 0)
+        gridBtcCheck.addWidget(self.textProfit, index, 1)
+
         #
         self.buttonSaveSetting = QtWidgets.QPushButton(u'保存配置')
         self.buttonSaveSetting.setStyleSheet("background-color: blue")
@@ -93,14 +108,18 @@ class BrickTradeManager(QtWidgets.QWidget):
         self.buttonCancelAll.clicked.connect(self.cancelAll)
         self.buttonSwitchEngineStatus.clicked.connect(self.switchEngineStatus)
 
+    def profitCallback(self, account_info):
+        self.textProfit.setText("Token: %.4f, Cash: %.4f" % (account_info["PROFIT_TOKEN"],account_info["PROFIT_CASH"]))
+
     def getSetting(self):
         """读取配置信息"""
         setting = self.brickEngine.settingsDict
 
         try:
-            self.lineGapLimit.setText(str(float(setting['gapLimit']) * 100))
-            self.lineUsdtCnyRate.setText(str(setting['exchangeRate']['CNY_USD']))
+            self.lineGapLimit.setText(str(round(float(setting['gapLimit']) * 100, 6)))
             self.lineAmount.setText(str(setting['amount']))
+            self.lineStep.setText(str(setting['step']))
+            self.linePrecision.setText(str(setting['precision']))
         except Exception as e:
             print(e)
 
@@ -108,9 +127,10 @@ class BrickTradeManager(QtWidgets.QWidget):
         # 写入配置到settingsDict
         try:
             setting = self.brickEngine.settingsDict
-            setting['gapLimit'] = float(self.lineGapLimit.text()) / 100
-            setting['exchangeRate']['CNY_USD'] = float(self.lineUsdtCnyRate.text())
+            setting['gapLimit'] = round(float(self.lineGapLimit.text()) / 100, 8)
             setting['amount'] = float(self.lineAmount.text())
+            setting['step'] = float(self.lineStep.text())
+            setting['precision'] = int(self.linePrecision.text())
         except Exception as e:
             print(e)
 
@@ -133,3 +153,4 @@ class BrickTradeManager(QtWidgets.QWidget):
         else:
             self.buttonSwitchEngineStatus.setText(u'开始搬砖')
             self.buttonSwitchEngineStatus.setStyleSheet("background-color: gray")
+

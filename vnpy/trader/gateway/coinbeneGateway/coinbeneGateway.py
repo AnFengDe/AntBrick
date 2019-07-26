@@ -402,6 +402,8 @@ class CoinbeneRestApi(RestClient):
 
     # ----------------------------------------------------------------------
     def queryAccount(self):
+        if self._queue.qsize() > len(self.symbols) * 2 + 3:
+            return
         """"""
         #while self._active:
         timestamp = int(time.time())
@@ -422,6 +424,8 @@ class CoinbeneRestApi(RestClient):
             #time.sleep(5)  # 每隔5秒刷新账户信息
 
     def queryOrder(self, orderid):
+        if self._queue.qsize() > len(self.symbols) * 2 + 3:
+            return
         timestamp = int(time.time())
         dic = {
             'orderid': orderid,
@@ -608,6 +612,8 @@ class CoinbeneRestApi(RestClient):
     def subscribe(self):
         depth = 5
         #dealSize = 20
+        if self._queue.qsize() > len(self.symbols) * 2 + 3:
+            return
         for symbol in self.symbols:
             # 获取市场深度
             path = "/v1/market/orderbook?symbol=" + symbol + "&depth=" + str(depth)

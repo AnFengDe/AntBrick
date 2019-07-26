@@ -1,7 +1,18 @@
 {
-    "amount": 3.0,
-    "exchangeRate": {
-        "CNY_USD": 0.1477
+    "amount": 10.0,
+    "otcPrice": {
+        "JCC.CNT": [
+            1.0,
+            0.979
+        ],
+        "COINBENE.USDT": [
+            6.94,
+            6.94
+        ],
+        "Coinw.CNYT": [
+            0.99,
+            0.987
+        ]
     },
     "vtSymbols": [
         "JCC.JMOAC-CNY",
@@ -58,7 +69,7 @@
             ]
         }
     },
-    "gapLimit": 0.036,
+    "gapLimit": 0.015,
     "step": 0.0001,
     "precision": 4
 }

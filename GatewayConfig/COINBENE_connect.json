@@ -1,7 +1,7 @@
 {
-	"apiKey": "cb547f70e12620ae28a1f5fa0457db74",
+	"apiKey": "",
 	"secretKey": "",
 	"sessionCount": 3,
-	"symbols": ["MOACUSDT","SWTCUSDT"],
+	"symbols": ["MOACUSDT"],
 	"ip": "192.168.1.222"
 }

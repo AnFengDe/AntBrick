@@ -1,0 +1,35 @@
+{
+    "amount": 1.0,
+    "otcPrice": {
+        "COINBENE.USDT": [
+            7.03,
+            7.01
+        ]
+    },
+    "vtSymbols": [
+        "JCC.JMOAC-JUSDT",
+        "COINBENE.MOACUSDT"
+    ],
+    "gatewaySettings": {
+        "fromGatewayName": "COINBENE",
+        "JCC": {
+            "VT_SYMBOL": "JCC.JMOAC-JUSDT",
+            "SYMBOL": "JMOAC-JUSDT",
+            "CURRENCY_SYMBOLS": [
+                "JMOAC",
+                "JUSDT"
+            ]
+        },
+        "COINBENE": {
+            "VT_SYMBOL": "COINBENE.MOACUSDT",
+            "SYMBOL": "MOACUSDT",
+            "CURRENCY_SYMBOLS": [
+                "MOAC",
+                "USDT"
+            ]
+        }
+    },
+    "gapLimit": 0.005,
+    "step": 0.0001,
+    "precision": 4
+}

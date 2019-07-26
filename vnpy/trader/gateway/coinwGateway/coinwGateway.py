@@ -450,6 +450,8 @@ class CoinwRestApi(RestClient):
             #time.sleep(5)  # 每隔5秒刷新账户信息
 
     def queryOrder(self, orderid):
+        if self._queue.qsize() > len(self.symbols) + 2:
+            return
         dic = {
             'api_key': self.apiKey,
             'id' : orderid
@@ -660,6 +662,8 @@ class CoinwRestApi(RestClient):
     def subscribe(self, subscribeReq):
         #depth = 5
         #dealSize = 20
+        if self._queue.qsize() > len(self.symbols):
+            return
         for symbol in self.symbols:
             # 获取实时深度行情
             path = "/appApi.html?action=depth&symbol=" + self.symbolsKeys[symbol]
