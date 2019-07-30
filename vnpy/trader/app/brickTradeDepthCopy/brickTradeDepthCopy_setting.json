@@ -1,0 +1,37 @@
+{
+    "mapWeightL": [0.00001, 0.00001, 0.00001, 0.00001, 0.00001],
+    "mapWeight": [0.00005, 0.00005, 0.00005, 0.00005, 0.00005],
+    "mapWeightH": [0.01, 0.01, 0.01, 0.01, 0.01],
+    "otcPrice": {
+        "COINBENE.USDT": [
+            7.03,
+            7.01
+        ]
+    },
+    "vtSymbols": [
+        "JCC.JXRP-JUSDT",
+        "xrpusdt.HUOBI"
+    ],
+    "gatewaySettings": {
+        "fromGatewayName": "HUOBI",
+        "JCC": {
+            "VT_SYMBOL": "JCC.JXRP-JUSDT",
+            "SYMBOL": "JXRP-JUSDT",
+            "CURRENCY_SYMBOLS": [
+                "JXRP",
+                "JUSDT"
+            ]
+        },
+        "HUOBI": {
+            "VT_SYMBOL": "xrpusdt.HUOBI",
+            "SYMBOL": "xrpusdt",
+            "CURRENCY_SYMBOLS": [
+                "xrp",
+                "usdt"
+            ]
+        }
+    },
+    "gapLimit": 0.05,
+    "step": 0.001,
+    "precision": 3
+}
