@@ -212,8 +212,6 @@ class BrickTradeEngine(object):
                 "volume": int(self.marketInfo[self.VT_SYMBOL_A]["askVolume%d" % i] * self.settingsDict["mapWeight"][i - 1])
             }
         operations = self.orderManager.difference((target_buy_depth, target_sell_depth))
-        now = datetime.now()
-        print(now)
         if len(operations) > 0:
             print("待处理", operations)
             for operation in operations:
@@ -280,6 +278,7 @@ class BrickTradeEngine(object):
             else:
                 req.direction = DIRECTION_BUY
                 req.price = round(order.price / (1 - self.settingsDict['gapLimit']), 4)
+            self.writeLog("对冲挂%s单: 数量 %f\t价格 %f" % (req.direction, req.volume, req.price))
             self.fromGateway.sendOrder(req)
 
     #----------------------------------------------------------------------
@@ -303,6 +302,8 @@ class BrickTradeEngine(object):
         elif order.status == STATUS_PARTTRADED:
             if order.vtSymbol == self.VT_SYMBOL_B:
                 self.orderManager.onOrder(order)
+                if order.tradedVolume * order.price > 1:
+                    self.jccGateway.cancelOrder(order.orderID)
         elif order.status == STATUS_PARTTRADED_CANCEL:
             if order.vtSymbol == self.VT_SYMBOL_B and self.orderManager.onOrder(order):
                 self.onOrderFilled(order)

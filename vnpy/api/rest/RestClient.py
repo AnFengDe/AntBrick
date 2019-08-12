@@ -241,7 +241,7 @@ class RestClient(object):
                                        url,
                                        headers=request.headers,
                                        params=request.params,
-                                       timeout=5,
+                                       timeout=10,
                                        data=request.data)
             request.response = response
     
