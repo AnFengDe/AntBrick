@@ -223,7 +223,7 @@ class BrickTradeEngine(object):
             for operation in operations:
                 if operation['op'] == 'cancel':
                     print("撤%s单: 价格 %s\t数量 %f" % (self.orderManager.orderBook[operation['order_id']].direction, self.orderManager.orderBook[operation['order_id']].price, self.orderManager.orderBook[operation['order_id']].volume))
-                    self.jccGateway.cancelOrder(operation['order_id'].split('.')[1])
+                    self.jccGateway.cancelOrder(int(operation['order_id'].split('.')[1]))
                     self.jccLatestOperateTime = time.time() + 10
                     break
                 elif int(operation['volume']) > 0 and not self.latestReq:
