@@ -156,7 +156,7 @@ class JccGateway(VtGateway):
     # ----------------------------------------------------------------------
     def sendOrder(self, orderReq):
         """发单"""
-        self.exchangeApi.sendOrder(orderReq)
+        return self.exchangeApi.sendOrder(orderReq)
 
     # ----------------------------------------------------------------------
     def cancelOrder(self, cancelOrderReq):

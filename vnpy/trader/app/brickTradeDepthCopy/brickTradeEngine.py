@@ -69,6 +69,7 @@ class BrickTradeEngine(object):
         self.profit_update_callback = None
         self.orderManager = OrderManager()
         self.latestReq = None
+        self.jccLatestOperateTime = time.time() - 10
 
 
     def initGatewaySettings(self):
@@ -153,6 +154,7 @@ class BrickTradeEngine(object):
         while self.active:
             self.jccGateway.exchangeApi.queryAccount()
             self.jccGateway.subscribe(None)
+            self.jccGateway.exchangeApi.queryHistoryOrder()
             # self.fromGateway.subscribe(None)
             # self.fromGateway.restApi.queryAccount()
             self.profit_calculate()
@@ -196,6 +198,8 @@ class BrickTradeEngine(object):
 
     def seekBrickGap(self):
         target_buy_depth = {}
+        if self.VT_SYMBOL_A not in self.marketInfo.keys():
+            return
         for i in range(1, 6):
             price = self.marketInfo[self.VT_SYMBOL_A]["bid%d" % i] * (1 - self.settingsDict['gapLimit'])
             target_buy_depth[self.orderManager.formatPrice(price, DIRECTION_BUY)] = {
@@ -214,13 +218,17 @@ class BrickTradeEngine(object):
         operations = self.orderManager.difference((target_buy_depth, target_sell_depth))
         if len(operations) > 0:
             print("待处理", operations)
+            if self.jccLatestOperateTime > time.time():
+                return
             for operation in operations:
                 if operation['op'] == 'cancel':
                     print("撤%s单: 价格 %s\t数量 %f" % (self.orderManager.orderBook[operation['order_id']].direction, self.orderManager.orderBook[operation['order_id']].price, self.orderManager.orderBook[operation['order_id']].volume))
-                    self.jccGateway.cancelOrder(operation['order_id'])
+                    self.jccGateway.cancelOrder(operation['order_id'].split('.')[1])
+                    self.jccLatestOperateTime = time.time() + 10
                     break
-                elif int(operation['volume']) > 0 and self.latestReq != "":
+                elif int(operation['volume']) > 0 and not self.latestReq:
                     req = VtOrderReq()
+                    req.symbol = self.SYMBOL_B
                     req.volume = int(operation['volume'])
                     req.price = float(operation['price'])
                     req.direction = operation['op']
@@ -234,8 +242,11 @@ class BrickTradeEngine(object):
                         req.currencyPay = self.CURRENCY_SYMBOLS_B[0]
                         req.valueGet = round(req.volume * req.price, 6)
                         req.valuePay = req.volume
+                    if req.valuePay > self.jccGateway.accountDict[req.currencyPay].available:
+                        continue
                     print("挂%s单: 价格 %s\t数量 %d" % (operation['op'], operation['price'], int(operation['volume'])))
                     self.latestReq = self.jccGateway.sendOrder(req)
+                    self.jccLatestOperateTime = time.time() + 10
                     break
 
     def calc_price_with_gap(self, direction, target_volume):
@@ -271,6 +282,7 @@ class BrickTradeEngine(object):
     def onOrderFilled(self, order):
         if order.tradedVolume > 0:
             req = VtOrderReq()
+            req.symbol = self.SYMBOL_A
             req.volume = order.tradedVolume
             if order.direction == DIRECTION_BUY:
                 req.direction = DIRECTION_SELL
@@ -288,8 +300,6 @@ class BrickTradeEngine(object):
         if tick.vtSymbol not in self.settingsDict["vtSymbols"]:
             return
         order = event.dict_['data']
-        if self.latestReq == order.vtOrderID:
-            self.latestReq = ""
         if order.status == STATUS_CANCELLED:
             if order.vtSymbol == self.VT_SYMBOL_B and self.orderManager.onOrder(order):
                 self.onOrderFilled(order)
@@ -309,6 +319,8 @@ class BrickTradeEngine(object):
                 self.onOrderFilled(order)
         elif order.status == STATUS_REJECTED:
             pass
+        if self.latestReq == order.vtOrderID:
+            self.latestReq = ""
 
     #----------------------------------------------------------------------
     def updateTrade(self, event):
