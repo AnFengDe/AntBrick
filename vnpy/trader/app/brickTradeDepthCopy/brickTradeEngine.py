@@ -151,8 +151,8 @@ class BrickTradeEngine(object):
         self.profit_calculate()
         # 启动搬砖算法
         while self.active:
-            #self.jccGateway.exchangeApi.queryAccount()
-            #self.jccGateway.subscribe(None)
+            self.jccGateway.exchangeApi.queryAccount()
+            self.jccGateway.subscribe(None)
             # self.fromGateway.subscribe(None)
             # self.fromGateway.restApi.queryAccount()
             self.profit_calculate()
