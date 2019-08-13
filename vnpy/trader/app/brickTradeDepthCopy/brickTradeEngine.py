@@ -217,7 +217,7 @@ class BrickTradeEngine(object):
             }
         operations = self.orderManager.difference((target_buy_depth, target_sell_depth))
         if len(operations) > 0:
-            print("待处理", operations)
+            # print("待处理", operations)
             if self.jccLatestOperateTime > time.time():
                 return
             for operation in operations:
@@ -226,7 +226,7 @@ class BrickTradeEngine(object):
                     self.jccGateway.cancelOrder(int(operation['order_id'].split('.')[1]))
                     self.jccLatestOperateTime = time.time() + 10
                     break
-                elif int(operation['volume']) > 0 and not self.latestReq:
+                elif int(operation['volume']) * float(operation['price']) * (1 - self.settingsDict["gapLimit"]) > 1 and not self.latestReq:
                     req = VtOrderReq()
                     req.symbol = self.SYMBOL_B
                     req.volume = int(operation['volume'])
@@ -285,12 +285,12 @@ class BrickTradeEngine(object):
             req.symbol = self.SYMBOL_A
             req.volume = order.tradedVolume
             if order.direction == DIRECTION_BUY:
-                req.direction = DIRECTION_SELL
-                req.price = round(order.price / (1 + self.settingsDict['gapLimit']), 4)
+                req.direction = DIRECTION_SHORT
+                req.price = round(order.price * (1 + self.settingsDict['gapLimit']), 4)
             else:
-                req.direction = DIRECTION_BUY
-                req.price = round(order.price / (1 - self.settingsDict['gapLimit']), 4)
-            self.writeLog("对冲挂%s单: 数量 %f\t价格 %f" % (req.direction, req.volume, req.price))
+                req.direction = DIRECTION_LONG
+                req.price = round(order.price * (1 - self.settingsDict['gapLimit']), 4)
+            self.writeLog("对冲挂%s单: 数量 %f\t价格 %f" % ((DIRECTION_BUY if req.direction == DIRECTION_LONG else DIRECTION_SELL), req.volume, req.price))
             self.fromGateway.sendOrder(req)
 
     #----------------------------------------------------------------------

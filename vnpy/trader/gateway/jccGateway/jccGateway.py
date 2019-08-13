@@ -465,7 +465,7 @@ class JccExchangeApi(RestClient):
                 'Sequence': sequence,
                 'Account': self.account,
                 'Fee': 10,
-                'OfferSequence': seq,
+                'OfferSequence': int(seq),
                 'TransactionType': "OfferCancel"
             }
             self.transaction.parseJson(options)
