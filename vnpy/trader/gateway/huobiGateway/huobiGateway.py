@@ -331,7 +331,9 @@ class HuobiRestApi(RestClient):
         }
         
         path = '/v1/order/orders/place'
-        self.addRequest('POST', path, self.onSendOrder, 
+        self.addRequest('POST', path, self.onSendOrder,
+                        onError=self.onSendOrderError,
+                        onFailed=self.onSendOrderFailed,
                         data=params, extra=localID)
         
         # 缓存委托
@@ -493,7 +495,27 @@ class HuobiRestApi(RestClient):
 
             self.gateway.onContract(contract)
             
-        self.queryAccount()        
+        self.queryAccount()
+
+    # ----------------------------------------------------------------------
+    def onSendOrderFailed(self, data, request):
+        """
+        下单失败回调：服务器明确告知下单失败
+        """
+        localID = request.extra
+        order = self.orderBufDict[localID]
+        order.status = STATUS_REJECTED
+        self.gateway.onOrder(order)
+
+    # ----------------------------------------------------------------------
+    def onSendOrderError(self, exceptionType, exceptionValue, tb, request):
+        """
+        下单失败回调：连接错误
+        """
+        localID = request.extra
+        order = self.orderBufDict[localID]
+        order.status = STATUS_REJECTED
+        self.gateway.onOrder(order)
 
     #----------------------------------------------------------------------
     def onSendOrder(self, data, request):  # type: (dict, Request)->None
@@ -516,7 +538,9 @@ class HuobiRestApi(RestClient):
         
         self.localOrderDict[localID] = strOrderID
         self.orderDict[strOrderID] = order
-        
+        order.status = STATUS_ORDERED  # 已报
+        self.gateway.onOrder(order)
+
         req = self.cancelReqDict.get(localID, None)
         if req:
             self.cancelOrder(req)

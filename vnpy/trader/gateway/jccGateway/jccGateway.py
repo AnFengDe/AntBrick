@@ -273,6 +273,7 @@ class JccGateway(VtGateway):
                                     order.status = STATUS_PARTTRADED_CANCEL
                                 order.valueGot = float(effects['got']['value'])
                                 order.valuePaid = float(effects['paid']['value'])
+                                order.tradedVolume = float(effects['paid']['value'] if effects['got']['currency'] == 'JUSDT' or effects['got']['currency'] == 'CNY' else effects['got']['value'])
                                 push_order[strOrderID] = order
             elif d.get('type') == 'offercancel':
                 for effects in d['effects']:

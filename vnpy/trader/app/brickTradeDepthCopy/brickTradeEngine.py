@@ -70,6 +70,8 @@ class BrickTradeEngine(object):
         self.orderManager = OrderManager()
         self.latestReq = None
         self.jccLatestOperateTime = time.time() - 10
+        self.partCancelSet = set()
+        self.latestReqOrder = None
 
 
     def initGatewaySettings(self):
@@ -156,7 +158,7 @@ class BrickTradeEngine(object):
             self.jccGateway.subscribe(None)
             self.jccGateway.exchangeApi.queryHistoryOrder()
             # self.fromGateway.subscribe(None)
-            # self.fromGateway.restApi.queryAccount()
+            self.fromGateway.restApi.queryAccount()
             self.profit_calculate()
             time.sleep(1)
 
@@ -286,12 +288,13 @@ class BrickTradeEngine(object):
             req.volume = order.tradedVolume
             if order.direction == DIRECTION_BUY:
                 req.direction = DIRECTION_SHORT
-                req.price = round(order.price * (1 + self.settingsDict['gapLimit']), 4)
+                req.price = round(order.price, 4)
             else:
                 req.direction = DIRECTION_LONG
-                req.price = round(order.price * (1 - self.settingsDict['gapLimit']), 4)
+                req.price = round(order.price, 4)
             self.writeLog("对冲挂%s单: 数量 %f\t价格 %f" % ((DIRECTION_BUY if req.direction == DIRECTION_LONG else DIRECTION_SELL), req.volume, req.price))
-            self.fromGateway.sendOrder(req)
+            self.latestReq = self.fromGateway.sendOrder(req)
+            self.latestReqOrder = req
 
     #----------------------------------------------------------------------
     def updateOrder(self, event):
@@ -302,6 +305,7 @@ class BrickTradeEngine(object):
         order = event.dict_['data']
         if order.status == STATUS_CANCELLED:
             if order.vtSymbol == self.VT_SYMBOL_B and self.orderManager.onOrder(order):
+                self.partCancelSet.add(order.vtOrderID)
                 self.onOrderFilled(order)
         if order.status == STATUS_ORDERED:
             if order.vtSymbol == self.VT_SYMBOL_B:
@@ -311,16 +315,21 @@ class BrickTradeEngine(object):
                 self.onOrderFilled(order)
         elif order.status == STATUS_PARTTRADED:
             if order.vtSymbol == self.VT_SYMBOL_B:
-                self.orderManager.onOrder(order)
-                if order.tradedVolume * order.price > 1:
-                    self.jccGateway.cancelOrder(order.orderID)
+                if order.vtOrderID not in self.partCancelSet:
+                    self.orderManager.onOrder(order)
+                    if (order.tradedVolume * order.price * (1 - self.settingsDict['gapLimit'])) > 1:
+                        self.jccGateway.cancelOrder(order.orderID)
         elif order.status == STATUS_PARTTRADED_CANCEL:
             if order.vtSymbol == self.VT_SYMBOL_B and self.orderManager.onOrder(order):
+                self.partCancelSet.add(order.vtOrderID)
                 self.onOrderFilled(order)
         elif order.status == STATUS_REJECTED:
-            pass
+            if order.vtOrderID == self.latestReq and self.latestReqOrder is not None:
+                self.latestReq = self.fromGateway.sendOrder(req)
+                return
         if self.latestReq == order.vtOrderID:
             self.latestReq = ""
+            self.latestReqOrder = None
 
     #----------------------------------------------------------------------
     def updateTrade(self, event):
